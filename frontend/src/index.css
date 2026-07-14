@@ -1,0 +1,87 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #f5f7fa;
+  color: #1a1a1a;
+}
+
+.page { max-width: 960px; margin: 0 auto; padding: 24px; }
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  font-weight: bold;
+}
+.navbar a { color: #0f4c81; text-decoration: none; }
+.nav-links { display: flex; gap: 16px; align-items: center; }
+
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fff;
+  padding: 32px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  width: 320px;
+}
+.auth-form label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.auth-form input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+
+button {
+  background: #0f4c81;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.report-filters, .send-form {
+  display: flex;
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+.report-filters label, .send-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+.report-filters input, .send-form input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+
+.summary { display: flex; gap: 16px; margin-bottom: 16px; }
+.summary-box {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 12px 20px;
+}
+.summary-box .label { font-size: 11px; color: #777; text-transform: uppercase; }
+.summary-box .value { font-size: 22px; font-weight: bold; color: #0f4c81; }
+
+.flags {
+  background: #fff8e6;
+  border: 1px solid #f0c36d;
+  border-radius: 6px;
+  padding: 12px 20px;
+  margin-bottom: 20px;
+}
+
+table { width: 100%; border-collapse: collapse; margin-bottom: 20px; background: #fff; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #eee; font-size: 14px; }
+th { background: #0f4c81; color: #fff; }
+
+.error { color: #c0392b; }
+.success { color: #1e8449; }
