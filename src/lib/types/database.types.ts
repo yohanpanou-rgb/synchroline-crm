@@ -11,6 +11,9 @@ export type VisitStatus = "planned" | "completed" | "cancelled";
 export type ProductName = "aknicare" | "closebax" | "terproline" | "rosacure";
 
 export interface Database {
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5";
+  };
   public: {
     Tables: {
       profiles: {
@@ -112,7 +115,30 @@ export interface Database {
           last_name: string;
           first_name: string;
         };
-        Update: Partial<Database["public"]["Tables"]["doctors"]["Row"]>;
+        Update: Partial<{
+          full_name_raw: string | null;
+          last_name: string;
+          first_name: string;
+          region: string | null;
+          county: string | null;
+          brick_code: string | null;
+          dynamic_category: DynamicCategory | null;
+          budget_2025: number | null;
+          budget_2026: number | null;
+          disbursed_2025: number | null;
+          disbursed_2026: number | null;
+          incentive_2025: number | null;
+          incentive_2026: number | null;
+          priority_color: PriorityColor | null;
+          pharmacy_1: string | null;
+          pharmacy_2: string | null;
+          weekly_rx_aknicare: number | null;
+          weekly_rx_closebax: number | null;
+          weekly_rx_terproline: number | null;
+          weekly_rx_rosacure: number | null;
+          current_rep_id: string | null;
+          status: DoctorStatus;
+        }>;
         Relationships: [
           {
             foreignKeyName: "doctors_brick_code_fkey";
@@ -273,7 +299,17 @@ export interface Database {
           rep_id: string;
           cycle_id: string;
         };
-        Update: Partial<Database["public"]["Tables"]["visits"]["Row"]>;
+        Update: Partial<{
+          doctor_id: string;
+          rep_id: string;
+          cycle_id: string;
+          visit_type: VisitType;
+          status: VisitStatus;
+          scheduled_date: string | null;
+          completed_date: string | null;
+          notes: string | null;
+          location_context: string | null;
+        }>;
         Relationships: [
           {
             foreignKeyName: "visits_doctor_id_fkey";
