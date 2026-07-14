@@ -15,18 +15,16 @@ export default async function LoginPage({
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
           <Image
-            src="/logo-cpo-greece.svg"
+            src="/logo-cpo-greece.webp"
             alt="CPO Greece"
-            width={64}
-            height={64}
+            width={175}
+            height={100}
+            className="h-14 w-auto"
             priority
           />
-          <div className="text-center">
-            <h1 className="text-lg font-semibold text-primary-dark">
-              Synchroline CRM
-            </h1>
-            <p className="text-sm text-ink/60">CPO Greece</p>
-          </div>
+          <h1 className="text-lg font-semibold text-primary-dark">
+            Synchroline CRM
+          </h1>
         </div>
 
         <form
