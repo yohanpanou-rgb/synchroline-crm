@@ -4,6 +4,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 import type { NavItem } from "@/lib/constants/nav";
+import {
+  DashboardIcon,
+  DoctorsIcon,
+  VisitsIcon,
+  CyclesIcon,
+} from "@/components/ui/icons";
+
+// Icon components can't cross the server -> client boundary as props, so the
+// href -> icon mapping lives here (client-side) instead of in nav.ts.
+const ICONS_BY_HREF: Record<string, typeof DashboardIcon> = {
+  "/dashboard": DashboardIcon,
+  "/doctors": DoctorsIcon,
+  "/visits": VisitsIcon,
+  "/cycles": CyclesIcon,
+};
 
 export function NavLink({
   item,
@@ -14,7 +29,7 @@ export function NavLink({
 }) {
   const pathname = usePathname();
   const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-  const Icon = item.icon;
+  const Icon = ICONS_BY_HREF[item.href] ?? DashboardIcon;
 
   if (variant === "bottom") {
     return (
