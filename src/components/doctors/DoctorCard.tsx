@@ -1,0 +1,52 @@
+import Link from "next/link";
+import { Badge } from "@/components/ui/Badge";
+import { formatDoctorName } from "@/lib/utils/name-normalization";
+import type { Database } from "@/lib/types/database.types";
+
+type Doctor = Database["public"]["Tables"]["doctors"]["Row"];
+
+const PRIORITY_TONE = {
+  green: "success",
+  orange: "warning",
+  red: "danger",
+} as const;
+
+const PRIORITY_LABEL = {
+  green: "Πράσινο",
+  orange: "Πορτοκαλί",
+  red: "Κόκκινο",
+} as const;
+
+const STATUS_LABEL = {
+  active: "Ενεργός",
+  pending_approval: "Εκκρεμεί έγκριση",
+  archived: "Αρχειοθετημένος",
+} as const;
+
+export function DoctorCard({ doctor }: { doctor: Doctor }) {
+  return (
+    <Link
+      href={`/doctors/${doctor.id}`}
+      className="flex items-center justify-between gap-3 rounded-2xl border border-black/5 bg-white p-4 shadow-sm transition-colors hover:border-primary/30"
+    >
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-ink">
+          {formatDoctorName(doctor.last_name, doctor.first_name)}
+        </p>
+        <p className="truncate text-xs text-ink/50">
+          {[doctor.county, doctor.region].filter(Boolean).join(" · ") || "—"}
+        </p>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        {doctor.priority_color && (
+          <Badge tone={PRIORITY_TONE[doctor.priority_color]}>
+            {PRIORITY_LABEL[doctor.priority_color]}
+          </Badge>
+        )}
+        {doctor.status !== "active" && (
+          <Badge tone="neutral">{STATUS_LABEL[doctor.status]}</Badge>
+        )}
+      </div>
+    </Link>
+  );
+}
