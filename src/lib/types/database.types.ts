@@ -36,6 +36,7 @@ export interface Database {
           role: UserRole;
           is_active: boolean;
         }>;
+        Relationships: [];
       };
       bricks: {
         Row: {
@@ -56,6 +57,7 @@ export interface Database {
           region: string | null;
           county: string | null;
         }>;
+        Relationships: [];
       };
       doctors: {
         Row: {
@@ -111,6 +113,22 @@ export interface Database {
           first_name: string;
         };
         Update: Partial<Database["public"]["Tables"]["doctors"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "doctors_brick_code_fkey";
+            columns: ["brick_code"];
+            isOneToOne: false;
+            referencedRelation: "bricks";
+            referencedColumns: ["code"];
+          },
+          {
+            foreignKeyName: "doctors_current_rep_id_fkey";
+            columns: ["current_rep_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       territory_assignments: {
         Row: {
@@ -133,6 +151,29 @@ export interface Database {
           valid_from: string;
           valid_to: string | null;
         }>;
+        Relationships: [
+          {
+            foreignKeyName: "territory_assignments_doctor_id_fkey";
+            columns: ["doctor_id"];
+            isOneToOne: false;
+            referencedRelation: "doctors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "territory_assignments_rep_id_fkey";
+            columns: ["rep_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "territory_assignments_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       cycles: {
         Row: {
@@ -155,6 +196,7 @@ export interface Database {
           end_date: string;
           is_active: boolean;
         }>;
+        Relationships: [];
       };
       cycle_targets: {
         Row: {
@@ -172,11 +214,37 @@ export interface Database {
           target_visits?: number;
           target_coverage_pct?: number;
           set_by?: string | null;
+          set_at?: string;
         };
         Update: Partial<{
           target_visits: number;
           target_coverage_pct: number;
+          set_by: string | null;
+          set_at: string;
         }>;
+        Relationships: [
+          {
+            foreignKeyName: "cycle_targets_rep_id_fkey";
+            columns: ["rep_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "cycle_targets_cycle_id_fkey";
+            columns: ["cycle_id"];
+            isOneToOne: false;
+            referencedRelation: "cycles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "cycle_targets_set_by_fkey";
+            columns: ["set_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       visits: {
         Row: {
@@ -206,6 +274,29 @@ export interface Database {
           cycle_id: string;
         };
         Update: Partial<Database["public"]["Tables"]["visits"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "visits_doctor_id_fkey";
+            columns: ["doctor_id"];
+            isOneToOne: false;
+            referencedRelation: "doctors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "visits_rep_id_fkey";
+            columns: ["rep_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "visits_cycle_id_fkey";
+            columns: ["cycle_id"];
+            isOneToOne: false;
+            referencedRelation: "cycles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       visit_products: {
         Row: {
@@ -226,6 +317,15 @@ export interface Database {
           samples_given: number;
           notes: string | null;
         }>;
+        Relationships: [
+          {
+            foreignKeyName: "visit_products_visit_id_fkey";
+            columns: ["visit_id"];
+            isOneToOne: false;
+            referencedRelation: "visits";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: Record<string, never>;
@@ -235,5 +335,7 @@ export interface Database {
         Returns: UserRole;
       };
     };
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
