@@ -300,6 +300,7 @@ export interface Database {
           visit_type: VisitType;
           status: VisitStatus;
           scheduled_date: string | null;
+          scheduled_time: string | null;
           completed_date: string | null;
           notes: string | null;
           location_context: string | null;
@@ -310,6 +311,7 @@ export interface Database {
           visit_type: VisitType;
           status: VisitStatus;
           scheduled_date: string | null;
+          scheduled_time: string | null;
           completed_date: string | null;
           notes: string | null;
           location_context: string | null;
@@ -325,6 +327,7 @@ export interface Database {
           visit_type: VisitType;
           status: VisitStatus;
           scheduled_date: string | null;
+          scheduled_time: string | null;
           completed_date: string | null;
           notes: string | null;
           location_context: string | null;

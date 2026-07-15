@@ -6,6 +6,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
+import { TIME_SLOTS } from "@/lib/constants/schedule";
 import type { VisitStatus } from "@/lib/types/database.types";
 
 interface DoctorOption {
@@ -39,6 +40,8 @@ export function VisitForm({
   doctors,
   reps,
   defaultDoctorId,
+  defaultDate,
+  defaultTime,
   cycleId,
   cycleName,
 }: {
@@ -46,11 +49,13 @@ export function VisitForm({
   doctors: DoctorOption[];
   reps?: RepOption[];
   defaultDoctorId?: string;
+  defaultDate?: string;
+  defaultTime?: string;
   cycleId?: string;
   cycleName?: string;
 }) {
   const [status, setStatus] = useState<VisitStatus>("planned");
-  const today = new Date().toISOString().slice(0, 10);
+  const today = defaultDate ?? new Date().toISOString().slice(0, 10);
 
   return (
     <form action={action} className="space-y-6">
@@ -109,6 +114,19 @@ export function VisitForm({
             required
           />
         </Field>
+
+        {status === "planned" && (
+          <Field label="Ώρα">
+            <Select name="scheduled_time" defaultValue={defaultTime ?? ""}>
+              <option value="">—</option>
+              {TIME_SLOTS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
 
         <Field label="Πλαίσιο τοποθεσίας">
           <Input name="location_context" placeholder="π.χ. ιατρείο, νοσοκομείο" />

@@ -31,9 +31,16 @@ export default async function VisitsPage() {
     <div className="mx-auto max-w-2xl">
       <div className="mb-5 flex items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-primary-dark">Επισκέψεις</h1>
-        <Link href="/visits/new">
-          <Button size="md">+ Νέα επίσκεψη</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/visits/calendar">
+            <Button variant="secondary" size="md">
+              Ημερολόγιο
+            </Button>
+          </Link>
+          <Link href="/visits/new">
+            <Button size="md">+ Νέα επίσκεψη</Button>
+          </Link>
+        </div>
       </div>
 
       <div className="space-y-2">

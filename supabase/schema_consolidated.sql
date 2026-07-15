@@ -293,3 +293,8 @@ alter table public.doctors
   add column address text,
   add column notes text,
   add column hq_type text check (hq_type in ('ΕΔΡΑ', 'ΕΠΑΡΧΙΑ'));
+
+
+-- Ώρα ραντεβού, για την προβολή ημερολογίου (Δευτέρα-Παρασκευή, 09:00-21:00, slots 30').
+alter table public.visits
+  add column scheduled_time time;

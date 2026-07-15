@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
-import type { NavItem } from "@/lib/constants/nav";
+import { NAV_ITEMS, type NavItem } from "@/lib/constants/nav";
 import {
   DashboardIcon,
   DoctorsIcon,
   VisitsIcon,
+  CalendarIcon,
   CyclesIcon,
 } from "@/components/ui/icons";
 
@@ -17,8 +18,21 @@ const ICONS_BY_HREF: Record<string, typeof DashboardIcon> = {
   "/dashboard": DashboardIcon,
   "/doctors": DoctorsIcon,
   "/visits": VisitsIcon,
+  "/visits/calendar": CalendarIcon,
   "/cycles": CyclesIcon,
 };
+
+function isNavItemActive(pathname: string, href: string) {
+  if (pathname === href) return true;
+  if (!pathname.startsWith(`${href}/`)) return false;
+  // Prefer the longest matching nav href so nested routes that are also
+  // their own nav item (e.g. /visits/calendar under /visits) don't
+  // highlight both entries at once.
+  const longestMatch = NAV_ITEMS.filter(
+    (i) => pathname === i.href || pathname.startsWith(`${i.href}/`),
+  ).sort((a, b) => b.href.length - a.href.length)[0];
+  return longestMatch?.href === href;
+}
 
 export function NavLink({
   item,
@@ -28,7 +42,7 @@ export function NavLink({
   variant: "sidebar" | "bottom";
 }) {
   const pathname = usePathname();
-  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+  const isActive = isNavItemActive(pathname, item.href);
   const Icon = ICONS_BY_HREF[item.href] ?? DashboardIcon;
 
   if (variant === "bottom") {
