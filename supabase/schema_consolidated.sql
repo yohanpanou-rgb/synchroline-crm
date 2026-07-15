@@ -282,3 +282,14 @@ create policy "visit_products_write_scope" on public.visit_products
       where v.id = visit_products.visit_id
         and (public.current_user_role() in ('manager','admin') or v.rep_id = auth.uid()))
   );
+
+
+-- Πρόσθετα πεδία από το πραγματικό αρχείο πελατολογίου (ΝΕΟ_ΑΡΧΕΙΟ_ΓΙΑΤΡΩΝ),
+-- που δεν προβλέπονταν στο αρχικό PRD schema αλλά υπάρχουν στα δεδομένα.
+alter table public.doctors
+  add column specialty text,
+  add column phone_1 text,
+  add column phone_2 text,
+  add column address text,
+  add column notes text,
+  add column hq_type text check (hq_type in ('ΕΔΡΑ', 'ΕΠΑΡΧΙΑ'));

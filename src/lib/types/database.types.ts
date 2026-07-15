@@ -9,6 +9,7 @@ export type PriorityColor = "green" | "orange" | "red";
 export type VisitType = "normal" | "joint";
 export type VisitStatus = "planned" | "completed" | "cancelled";
 export type ProductName = "aknicare" | "closebax" | "terproline" | "rosacure";
+export type HqType = "ΕΔΡΑ" | "ΕΠΑΡΧΙΑ";
 
 export interface Database {
   __InternalSupabase: {
@@ -87,6 +88,12 @@ export interface Database {
           weekly_rx_rosacure: number | null;
           current_rep_id: string | null;
           status: DoctorStatus;
+          specialty: string | null;
+          phone_1: string | null;
+          phone_2: string | null;
+          address: string | null;
+          notes: string | null;
+          hq_type: HqType | null;
           created_at: string;
           updated_at: string;
         };
@@ -111,6 +118,12 @@ export interface Database {
           weekly_rx_rosacure: number | null;
           current_rep_id: string | null;
           status: DoctorStatus;
+          specialty: string | null;
+          phone_1: string | null;
+          phone_2: string | null;
+          address: string | null;
+          notes: string | null;
+          hq_type: HqType | null;
         }> & {
           last_name: string;
           first_name: string;
@@ -138,6 +151,12 @@ export interface Database {
           weekly_rx_rosacure: number | null;
           current_rep_id: string | null;
           status: DoctorStatus;
+          specialty: string | null;
+          phone_1: string | null;
+          phone_2: string | null;
+          address: string | null;
+          notes: string | null;
+          hq_type: HqType | null;
         }>;
         Relationships: [
           {

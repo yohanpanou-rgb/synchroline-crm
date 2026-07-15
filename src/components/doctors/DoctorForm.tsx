@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import type { Database } from "@/lib/types/database.types";
 
@@ -57,9 +58,33 @@ export function DoctorForm({
         <Field label="Περιοχή">
           <Input name="region" defaultValue={doctor?.region ?? ""} />
         </Field>
-        <Field label="Νομός">
+        <Field label="Νομός / Πόλη">
           <Input name="county" defaultValue={doctor?.county ?? ""} />
         </Field>
+
+        <Field label="Ειδικότητα">
+          <Input name="specialty" defaultValue={doctor?.specialty ?? ""} />
+        </Field>
+        <Field label="Έδρα / Επαρχία">
+          <Select name="hq_type" defaultValue={doctor?.hq_type ?? ""}>
+            <option value="">—</option>
+            <option value="ΕΔΡΑ">Έδρα</option>
+            <option value="ΕΠΑΡΧΙΑ">Επαρχία</option>
+          </Select>
+        </Field>
+
+        <Field label="Τηλέφωνο 1">
+          <Input name="phone_1" defaultValue={doctor?.phone_1 ?? ""} />
+        </Field>
+        <Field label="Τηλέφωνο 2">
+          <Input name="phone_2" defaultValue={doctor?.phone_2 ?? ""} />
+        </Field>
+
+        <div className="sm:col-span-2">
+          <Field label="Διεύθυνση">
+            <Input name="address" defaultValue={doctor?.address ?? ""} />
+          </Field>
+        </div>
 
         <Field label="Δυναμική κατηγορία">
           <Select
@@ -90,6 +115,12 @@ export function DoctorForm({
         <Field label="Φαρμακείο 2">
           <Input name="pharmacy_2" defaultValue={doctor?.pharmacy_2 ?? ""} />
         </Field>
+
+        <div className="sm:col-span-2">
+          <Field label="Σημειώσεις">
+            <Textarea name="notes" defaultValue={doctor?.notes ?? ""} />
+          </Field>
+        </div>
       </div>
 
       <div>

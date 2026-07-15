@@ -8,6 +8,7 @@ import { normalizeDoctorName } from "@/lib/utils/name-normalization";
 import type {
   DoctorStatus,
   DynamicCategory,
+  HqType,
   PriorityColor,
 } from "@/lib/types/database.types";
 
@@ -103,6 +104,12 @@ export async function createDoctor(formData: FormData) {
       weekly_rx_rosacure: num(formData, "weekly_rx_rosacure"),
       current_rep_id: currentRepId,
       status,
+      specialty: str(formData, "specialty"),
+      phone_1: str(formData, "phone_1"),
+      phone_2: str(formData, "phone_2"),
+      address: str(formData, "address"),
+      notes: str(formData, "notes"),
+      hq_type: str(formData, "hq_type") as HqType | null,
     })
     .select("id")
     .single();
@@ -164,6 +171,12 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
       weekly_rx_rosacure: num(formData, "weekly_rx_rosacure"),
       current_rep_id: currentRepId,
       status: (str(formData, "status") as DoctorStatus) ?? "active",
+      specialty: str(formData, "specialty"),
+      phone_1: str(formData, "phone_1"),
+      phone_2: str(formData, "phone_2"),
+      address: str(formData, "address"),
+      notes: str(formData, "notes"),
+      hq_type: str(formData, "hq_type") as HqType | null,
     })
     .eq("id", doctorId);
 

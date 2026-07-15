@@ -17,7 +17,21 @@ export function DoctorDetailView({ doctor }: { doctor: Doctor }) {
     <div className="space-y-4">
       <div>
         <Row label="Περιοχή" value={doctor.region} />
-        <Row label="Νομός" value={doctor.county} />
+        <Row label="Νομός / Πόλη" value={doctor.county} />
+        <Row label="Ειδικότητα" value={doctor.specialty} />
+        <Row
+          label="Έδρα / Επαρχία"
+          value={
+            doctor.hq_type === "ΕΔΡΑ"
+              ? "Έδρα"
+              : doctor.hq_type === "ΕΠΑΡΧΙΑ"
+                ? "Επαρχία"
+                : null
+          }
+        />
+        <Row label="Τηλέφωνο 1" value={doctor.phone_1} />
+        <Row label="Τηλέφωνο 2" value={doctor.phone_2} />
+        <Row label="Διεύθυνση" value={doctor.address} />
         <Row label="Δυναμική κατηγορία" value={doctor.dynamic_category} />
         <Row
           label="Προτεραιότητα"
@@ -39,6 +53,7 @@ export function DoctorDetailView({ doctor }: { doctor: Doctor }) {
         />
         <Row label="Φαρμακείο 1" value={doctor.pharmacy_1} />
         <Row label="Φαρμακείο 2" value={doctor.pharmacy_2} />
+        <Row label="Σημειώσεις" value={doctor.notes} />
       </div>
 
       <div>
