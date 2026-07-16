@@ -5,7 +5,12 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { createCycle, setActiveCycle, setCycleTarget } from "./actions";
+import {
+  createCycle,
+  setActiveCycle,
+  setCycleTarget,
+  recalculateTargets,
+} from "./actions";
 import { getAssignableReps } from "@/lib/queries/reps";
 
 export default async function CyclesPage({
@@ -99,8 +104,15 @@ export default async function CyclesPage({
 
       {activeCycle && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle>Στόχοι — {activeCycle.name}</CardTitle>
+            {isAdmin && (
+              <form action={recalculateTargets.bind(null, activeCycle.id)}>
+                <Button type="submit" variant="secondary" size="md">
+                  Επαναφορά σε 5/ημέρα, 100%
+                </Button>
+              </form>
+            )}
           </CardHeader>
           <div className="divide-y divide-black/5">
             {reps?.length === 0 && (

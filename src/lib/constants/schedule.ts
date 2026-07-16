@@ -41,3 +41,17 @@ export function addDays(date: Date, days: number): Date {
   d.setDate(d.getDate() + days);
   return d;
 }
+
+export const DAILY_VISIT_TARGET = 5;
+
+/** Number of Mon-Fri days between two ISO dates, inclusive on both ends. */
+export function countWorkdays(startISO: string, endISO: string): number {
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  let count = 0;
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const day = d.getDay();
+    if (day !== 0 && day !== 6) count++;
+  }
+  return count;
+}
