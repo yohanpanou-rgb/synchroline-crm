@@ -150,7 +150,7 @@ export default async function CalendarPage({
                           {cellVisits.map((v) => (
                             <Link
                               key={v.id}
-                              href={`/doctors/${v.doctor_id}`}
+                              href={`/visits/${v.id}/edit`}
                               className="block rounded-lg bg-primary/10 px-2 py-1 text-xs leading-tight text-primary-dark hover:bg-primary/20"
                             >
                               <p className="font-medium">

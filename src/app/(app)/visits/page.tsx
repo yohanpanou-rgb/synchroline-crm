@@ -70,10 +70,16 @@ export default async function VisitsPage() {
                 {visit.visit_type === "joint" ? "Κοινή επίσκεψη" : "Κανονική"}
               </p>
             </Link>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-3">
               <Badge tone={STATUS_TONE[visit.status]}>
                 {STATUS_LABEL[visit.status]}
               </Badge>
+              <Link
+                href={`/visits/${visit.id}/edit`}
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                Επεξεργασία
+              </Link>
               {visit.status === "planned" && (
                 <form action={cancelVisit.bind(null, visit.id)}>
                   <button

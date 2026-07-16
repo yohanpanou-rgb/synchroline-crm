@@ -22,6 +22,23 @@ const str = (formData: FormData, key: string) => {
   return typeof v === "string" && v.trim() !== "" ? v.trim() : null;
 };
 
+async function upsertProducts(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  visitId: string,
+  formData: FormData,
+) {
+  const productRows = PRODUCTS.map((product) => ({
+    visit_id: visitId,
+    product_name: product,
+    samples_given: Number(formData.get(`samples_${product}`) ?? 0) || 0,
+    notes: str(formData, `notes_${product}`),
+  }));
+
+  await supabase
+    .from("visit_products")
+    .upsert(productRows, { onConflict: "visit_id,product_name" });
+}
+
 export async function createVisit(formData: FormData) {
   const profile = await requireProfile();
   const supabase = await createClient();
@@ -60,18 +77,45 @@ export async function createVisit(formData: FormData) {
     );
   }
 
-  const productRows = PRODUCTS.map((product) => ({
-    visit_id: visit.id,
-    product_name: product,
-    samples_given: Number(formData.get(`samples_${product}`) ?? 0) || 0,
-    notes: str(formData, `notes_${product}`),
-  })).filter((row) => row.samples_given > 0 || row.notes);
-
-  if (productRows.length > 0) {
-    await supabase.from("visit_products").insert(productRows);
-  }
+  await upsertProducts(supabase, visit.id, formData);
 
   revalidatePath("/visits");
+  revalidatePath("/visits/calendar");
+  revalidatePath(`/doctors/${doctorId}`);
+  redirect("/visits");
+}
+
+export async function updateVisit(visitId: string, formData: FormData) {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+  const manager = isManagerOrAdmin(profile.role);
+
+  const doctorId = str(formData, "doctor_id");
+  const repId = (manager && str(formData, "rep_id")) || profile.id;
+  const status = (str(formData, "status") as VisitStatus) ?? "planned";
+
+  const { error } = await supabase
+    .from("visits")
+    .update({
+      rep_id: repId,
+      visit_type: (str(formData, "visit_type") as VisitType) ?? "normal",
+      status,
+      scheduled_date: str(formData, "scheduled_date"),
+      scheduled_time: status === "planned" ? str(formData, "scheduled_time") : null,
+      completed_date: status === "completed" ? str(formData, "completed_date") : null,
+      notes: str(formData, "notes"),
+      location_context: str(formData, "location_context"),
+    })
+    .eq("id", visitId);
+
+  if (error) {
+    redirect(`/visits/${visitId}/edit?error=${encodeURIComponent(error.message)}`);
+  }
+
+  await upsertProducts(supabase, visitId, formData);
+
+  revalidatePath("/visits");
+  revalidatePath("/visits/calendar");
   revalidatePath(`/doctors/${doctorId}`);
   redirect("/visits");
 }
