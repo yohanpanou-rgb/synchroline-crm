@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database.types";
+import { getAssignableReps } from "@/lib/queries/reps";
 
 type Cycle = Database["public"]["Tables"]["cycles"]["Row"];
 type Client = SupabaseClient<Database>;
@@ -95,14 +96,7 @@ export async function getAllRepsMetrics(
   supabase: Client,
   cycle: Cycle | null,
 ): Promise<RepMetrics[]> {
-  const { data: reps } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .eq("role", "rep")
-    .eq("is_active", true)
-    .order("full_name");
-
-  if (!reps) return [];
+  const reps = await getAssignableReps(supabase);
 
   return Promise.all(
     reps.map((rep) => getRepMetrics(supabase, rep.id, rep.full_name, cycle)),

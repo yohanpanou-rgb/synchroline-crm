@@ -4,6 +4,7 @@ import { requireProfile } from "@/lib/supabase/profile";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
+import { cancelVisit } from "./actions";
 
 const STATUS_TONE = {
   planned: "neutral",
@@ -50,12 +51,14 @@ export default async function VisitsPage() {
           </p>
         )}
         {visits?.map((visit) => (
-          <Link
+          <div
             key={visit.id}
-            href={`/doctors/${visit.doctor_id}`}
             className="flex items-center justify-between gap-3 rounded-2xl border border-black/5 bg-white p-4 shadow-sm hover:border-primary/30"
           >
-            <div className="min-w-0">
+            <Link
+              href={`/doctors/${visit.doctor_id}`}
+              className="min-w-0 flex-1"
+            >
               <p className="truncate text-sm font-semibold text-ink">
                 {visit.doctors
                   ? formatDoctorName(visit.doctors.last_name, visit.doctors.first_name)
@@ -66,11 +69,23 @@ export default async function VisitsPage() {
                 {visit.scheduled_date ?? visit.completed_date ?? "—"} ·{" "}
                 {visit.visit_type === "joint" ? "Κοινή επίσκεψη" : "Κανονική"}
               </p>
+            </Link>
+            <div className="flex shrink-0 items-center gap-2">
+              <Badge tone={STATUS_TONE[visit.status]}>
+                {STATUS_LABEL[visit.status]}
+              </Badge>
+              {visit.status === "planned" && (
+                <form action={cancelVisit.bind(null, visit.id)}>
+                  <button
+                    type="submit"
+                    className="text-xs font-medium text-danger hover:underline"
+                  >
+                    Ακύρωση
+                  </button>
+                </form>
+              )}
             </div>
-            <Badge tone={STATUS_TONE[visit.status]}>
-              {STATUS_LABEL[visit.status]}
-            </Badge>
-          </Link>
+          </div>
         ))}
       </div>
     </div>

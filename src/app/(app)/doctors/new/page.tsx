@@ -3,6 +3,7 @@ import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { DoctorForm } from "@/components/doctors/DoctorForm";
 import { Card } from "@/components/ui/Card";
 import { createDoctor } from "../actions";
+import { getAssignableReps } from "@/lib/queries/reps";
 
 export default async function NewDoctorPage({
   searchParams,
@@ -16,13 +17,7 @@ export default async function NewDoctorPage({
   let reps: { id: string; full_name: string }[] = [];
   if (manager) {
     const supabase = await createClient();
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .eq("role", "rep")
-      .eq("is_active", true)
-      .order("full_name");
-    reps = data ?? [];
+    reps = await getAssignableReps(supabase);
   }
 
   return (

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { getWeekVisits, type CalendarVisit } from "@/lib/queries/calendar";
+import { getAssignableReps } from "@/lib/queries/reps";
 import {
   TIME_SLOTS,
   WEEKDAY_LABELS,
@@ -44,16 +45,7 @@ export default async function CalendarPage({
     bySlot.set(key, arr);
   }
 
-  let reps: { id: string; full_name: string }[] = [];
-  if (manager) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .eq("role", "rep")
-      .eq("is_active", true)
-      .order("full_name");
-    reps = data ?? [];
-  }
+  const reps = manager ? await getAssignableReps(supabase) : [];
 
   const prevWeek = toISODate(addDays(weekStart, -7));
   const nextWeek = toISODate(addDays(weekStart, 7));

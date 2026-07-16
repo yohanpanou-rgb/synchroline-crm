@@ -183,32 +183,6 @@ export function DoctorForm({
             </div>
           </div>
 
-          <div>
-            <h3 className="mb-3 text-sm font-semibold text-primary-dark">
-              Οικονομικά στοιχεία συνεργασίας
-            </h3>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <Field label="Budget 2025">
-                <Input type="number" step="0.01" name="budget_2025" defaultValue={doctor?.budget_2025 ?? ""} />
-              </Field>
-              <Field label="Budget 2026">
-                <Input type="number" step="0.01" name="budget_2026" defaultValue={doctor?.budget_2026 ?? ""} />
-              </Field>
-              <Field label="Εκταμιευμένο 2025">
-                <Input type="number" step="0.01" name="disbursed_2025" defaultValue={doctor?.disbursed_2025 ?? ""} />
-              </Field>
-              <Field label="Εκταμιευμένο 2026">
-                <Input type="number" step="0.01" name="disbursed_2026" defaultValue={doctor?.disbursed_2026 ?? ""} />
-              </Field>
-              <Field label="Incentive 2025">
-                <Input type="number" step="0.01" name="incentive_2025" defaultValue={doctor?.incentive_2025 ?? ""} />
-              </Field>
-              <Field label="Incentive 2026">
-                <Input type="number" step="0.01" name="incentive_2026" defaultValue={doctor?.incentive_2026 ?? ""} />
-              </Field>
-            </div>
-          </div>
-
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Υπεύθυνος rep">
               <Select name="current_rep_id" defaultValue={doctor?.current_rep_id ?? ""}>

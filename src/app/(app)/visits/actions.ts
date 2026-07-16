@@ -75,3 +75,21 @@ export async function createVisit(formData: FormData) {
   revalidatePath(`/doctors/${doctorId}`);
   redirect("/visits");
 }
+
+export async function cancelVisit(visitId: string) {
+  await requireProfile();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("visits")
+    .update({ status: "cancelled" })
+    .eq("id", visitId)
+    .eq("status", "planned");
+
+  if (error) {
+    redirect(`/visits?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/visits");
+  revalidatePath("/visits/calendar");
+}

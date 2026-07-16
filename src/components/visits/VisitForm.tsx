@@ -103,6 +103,7 @@ export function VisitForm({
           >
             <option value="planned">Προγραμματισμένη</option>
             <option value="completed">Ολοκληρωμένη</option>
+            <option value="cancelled">Ακυρωμένη</option>
           </Select>
         </Field>
 

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
 import { updateDoctor } from "../actions";
+import { getAssignableReps } from "@/lib/queries/reps";
 
 const STATUS_TONE = {
   active: "success",
@@ -56,16 +57,7 @@ export default async function DoctorDetailPage({
     .order("scheduled_date", { ascending: false })
     .limit(10);
 
-  let reps: { id: string; full_name: string }[] = [];
-  if (manager) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .eq("role", "rep")
-      .eq("is_active", true)
-      .order("full_name");
-    reps = data ?? [];
-  }
+  const reps = manager ? await getAssignableReps(supabase) : [];
 
   return (
     <div className="mx-auto max-w-2xl">

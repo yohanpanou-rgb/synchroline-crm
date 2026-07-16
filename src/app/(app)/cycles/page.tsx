@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { createCycle, setActiveCycle, setCycleTarget } from "./actions";
+import { getAssignableReps } from "@/lib/queries/reps";
 
 export default async function CyclesPage({
   searchParams,
@@ -25,12 +26,7 @@ export default async function CyclesPage({
 
   const activeCycle = cycles?.find((c) => c.is_active) ?? null;
 
-  const { data: reps } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .eq("role", "rep")
-    .eq("is_active", true)
-    .order("full_name");
+  const reps = await getAssignableReps(supabase);
 
   const { data: targets } = activeCycle
     ? await supabase

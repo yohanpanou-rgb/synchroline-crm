@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { getActiveCycle } from "@/lib/queries/dashboard";
+import { getAssignableReps } from "@/lib/queries/reps";
 import { Card } from "@/components/ui/Card";
 import { VisitForm } from "@/components/visits/VisitForm";
 import { createVisit } from "../actions";
@@ -25,17 +26,10 @@ export default async function NewVisitPage({
     doctorsQuery = doctorsQuery.eq("current_rep_id", profile.id);
   }
 
-  const [{ data: doctors }, cycle, repsResult] = await Promise.all([
+  const [{ data: doctors }, cycle, reps] = await Promise.all([
     doctorsQuery,
     getActiveCycle(supabase),
-    manager
-      ? supabase
-          .from("profiles")
-          .select("id, full_name")
-          .eq("role", "rep")
-          .eq("is_active", true)
-          .order("full_name")
-      : Promise.resolve({ data: null }),
+    manager ? getAssignableReps(supabase) : Promise.resolve(null),
   ]);
 
   return (
@@ -61,7 +55,7 @@ export default async function NewVisitPage({
         <VisitForm
           action={createVisit}
           doctors={doctors ?? []}
-          reps={manager ? (repsResult.data ?? []) : undefined}
+          reps={manager ? (reps ?? []) : undefined}
           defaultDoctorId={doctorId}
           defaultDate={date}
           defaultTime={time}
