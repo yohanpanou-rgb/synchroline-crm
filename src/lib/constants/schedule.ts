@@ -105,6 +105,7 @@ export function nearestWorkday(date: Date): Date {
 }
 
 export const DAILY_VISIT_TARGET = 5;
+export const WEEKLY_PHARMACY_VISIT_TARGET = 8;
 
 /** Number of Mon-Fri days between two ISO dates, inclusive on both ends. */
 export function countWorkdays(startISO: string, endISO: string): number {

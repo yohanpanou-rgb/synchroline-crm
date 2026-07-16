@@ -385,6 +385,59 @@ export interface Database {
           },
         ];
       };
+      pharmacy_visits: {
+        Row: {
+          id: string;
+          rep_id: string;
+          cycle_id: string;
+          visit_date: string;
+          pharmacy_name: string;
+          nearby_doctor_id: string | null;
+          notes: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<{
+          visit_date: string;
+          nearby_doctor_id: string | null;
+        }> & {
+          rep_id: string;
+          cycle_id: string;
+          pharmacy_name: string;
+          notes: string;
+        };
+        Update: Partial<{
+          rep_id: string;
+          cycle_id: string;
+          visit_date: string;
+          pharmacy_name: string;
+          nearby_doctor_id: string | null;
+          notes: string;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "pharmacy_visits_rep_id_fkey";
+            columns: ["rep_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "pharmacy_visits_cycle_id_fkey";
+            columns: ["cycle_id"];
+            isOneToOne: false;
+            referencedRelation: "cycles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "pharmacy_visits_nearby_doctor_id_fkey";
+            columns: ["nearby_doctor_id"];
+            isOneToOne: false;
+            referencedRelation: "doctors";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {

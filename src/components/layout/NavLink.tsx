@@ -9,6 +9,7 @@ import {
   DoctorsIcon,
   VisitsIcon,
   CalendarIcon,
+  PharmacyIcon,
   CyclesIcon,
 } from "@/components/ui/icons";
 
@@ -19,6 +20,7 @@ const ICONS_BY_HREF: Record<string, typeof DashboardIcon> = {
   "/doctors": DoctorsIcon,
   "/visits": VisitsIcon,
   "/visits/calendar": CalendarIcon,
+  "/pharmacies": PharmacyIcon,
   "/cycles": CyclesIcon,
 };
 

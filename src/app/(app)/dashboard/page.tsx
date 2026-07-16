@@ -8,7 +8,14 @@ import {
 } from "@/lib/queries/dashboard";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PacingBar } from "@/components/dashboard/PacingBar";
+import {
+  getWeekPharmacyVisitCount,
+  getAllRepsPharmacyMetrics,
+} from "@/lib/queries/pharmacies";
+import { getAssignableReps } from "@/lib/queries/reps";
+import { WEEKLY_PHARMACY_VISIT_TARGET } from "@/lib/constants/schedule";
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
@@ -61,6 +68,8 @@ export default async function DashboardPage() {
       repsMetrics.length > 0
         ? repsMetrics.reduce((s, r) => s + r.coveragePct, 0) / repsMetrics.length
         : 0;
+    const reps = await getAssignableReps(supabase);
+    const pharmacyMetrics = await getAllRepsPharmacyMetrics(supabase, reps);
 
     return (
       <div className="mx-auto max-w-4xl">
@@ -93,11 +102,41 @@ export default async function DashboardPage() {
             ))}
           </div>
         </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>
+              Φαρμακεία — εβδομαδιαία πρόοδος (στόχος {WEEKLY_PHARMACY_VISIT_TARGET}/rep)
+            </CardTitle>
+          </CardHeader>
+          <div className="space-y-3">
+            {pharmacyMetrics.length === 0 && (
+              <p className="py-4 text-sm text-ink/50">Δεν υπάρχουν reps.</p>
+            )}
+            {pharmacyMetrics.map((m) => (
+              <div key={m.repId}>
+                <div className="mb-1 flex justify-between text-xs">
+                  <span className="font-medium text-ink">{m.repName}</span>
+                  <span className="tabular-nums text-ink/50">
+                    {m.count}/{WEEKLY_PHARMACY_VISIT_TARGET}
+                  </span>
+                </div>
+                <ProgressBar
+                  value={(m.count / WEEKLY_PHARMACY_VISIT_TARGET) * 100}
+                  colorClassName={
+                    m.count >= WEEKLY_PHARMACY_VISIT_TARGET ? "bg-success" : "bg-primary"
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        </Card>
       </div>
     );
   }
 
   const metrics = await getRepMetrics(supabase, profile.id, profile.full_name, cycle);
+  const pharmacyCount = await getWeekPharmacyVisitCount(supabase, profile.id);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -142,6 +181,24 @@ export default async function DashboardPage() {
             Δεν έχει οριστεί ενεργός κύκλος από τον admin.
           </p>
         )}
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Φαρμακεία — αυτή την εβδομάδα</CardTitle>
+        </CardHeader>
+        <div className="mb-1.5 flex justify-between text-xs">
+          <span className="text-ink/50">Πρόοδος</span>
+          <span className="tabular-nums font-medium text-ink">
+            {pharmacyCount}/{WEEKLY_PHARMACY_VISIT_TARGET}
+          </span>
+        </div>
+        <ProgressBar
+          value={(pharmacyCount / WEEKLY_PHARMACY_VISIT_TARGET) * 100}
+          colorClassName={
+            pharmacyCount >= WEEKLY_PHARMACY_VISIT_TARGET ? "bg-success" : "bg-primary"
+          }
+        />
       </Card>
     </div>
   );

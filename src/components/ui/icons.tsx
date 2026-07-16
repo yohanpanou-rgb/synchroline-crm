@@ -53,6 +53,16 @@ export function CalendarIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function PharmacyIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="8" width="18" height="13" rx="2" />
+      <path d="M8 8V6a4 4 0 0 1 8 0v2" />
+      <path d="M12 12v5M9.5 14.5h5" />
+    </Icon>
+  );
+}
+
 export function CyclesIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>
