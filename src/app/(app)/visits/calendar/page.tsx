@@ -143,15 +143,18 @@ export default async function CalendarPage({
                   return (
                     <td
                       key={i}
-                      className="border-b border-l border-black/5 p-1 align-top"
+                      className="border-b border-l border-black/5 p-0 align-top"
                     >
                       {cellVisits.length === 0 ? (
                         <Link
                           href={`/visits/new?date=${toISODate(d)}&time=${time}`}
-                          className="block h-8 rounded-lg hover:bg-primary/5"
-                        />
+                          title="Νέα επίσκεψη"
+                          className="flex min-h-11 w-full items-center justify-center text-ink/20 transition-colors hover:bg-primary/5 hover:text-primary"
+                        >
+                          <span className="text-lg leading-none">+</span>
+                        </Link>
                       ) : (
-                        <div className="space-y-1">
+                        <div className="space-y-1 p-1">
                           {cellVisits.map((v) => (
                             <Link
                               key={v.id}
