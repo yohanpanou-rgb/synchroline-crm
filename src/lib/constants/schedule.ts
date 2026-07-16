@@ -22,6 +22,23 @@ export const WEEKDAY_LABELS = [
   "Παρασκευή",
 ] as const;
 
+export const WEEKDAY_LABELS_SHORT = ["Δε", "Τρ", "Τε", "Πε", "Πα", "Σα", "Κυ"] as const;
+
+export const MONTH_LABELS = [
+  "Ιανουάριος",
+  "Φεβρουάριος",
+  "Μάρτιος",
+  "Απρίλιος",
+  "Μάιος",
+  "Ιούνιος",
+  "Ιούλιος",
+  "Αύγουστος",
+  "Σεπτέμβριος",
+  "Οκτώβριος",
+  "Νοέμβριος",
+  "Δεκέμβριος",
+] as const;
+
 /** Monday (local, midnight) of the week containing `date`. */
 export function startOfWeek(date: Date): Date {
   const d = new Date(date);
@@ -36,10 +53,55 @@ export function toISODate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/** "2026-07-16" -> "16/07/2026". Accepts a Date or an ISO date string. */
+export function formatDateGR(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 export function addDays(date: Date, days: number): Date {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
   return d;
+}
+
+/** Local midnight of the 1st of the month containing `date`. */
+export function startOfMonth(date: Date): Date {
+  const d = new Date(date.getFullYear(), date.getMonth(), 1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/** Local midnight of the last day of the month containing `date`. */
+export function endOfMonth(date: Date): Date {
+  const d = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/** Weeks (Mon-Sun) covering the full month containing `date`, including
+ * leading/trailing days from adjacent months so every row has 7 days. */
+export function getMonthGrid(date: Date): Date[][] {
+  const gridStart = startOfWeek(startOfMonth(date));
+  const gridEnd = addDays(startOfWeek(endOfMonth(date)), 6);
+  const weeks: Date[][] = [];
+  let cursor = gridStart;
+  while (cursor <= gridEnd) {
+    weeks.push([0, 1, 2, 3, 4, 5, 6].map((i) => addDays(cursor, i)));
+    cursor = addDays(cursor, 7);
+  }
+  return weeks;
+}
+
+/** The nearest Mon-Fri date to `date`, moving forward for Sat and back for Sun. */
+export function nearestWorkday(date: Date): Date {
+  const day = date.getDay();
+  if (day === 6) return addDays(date, 2);
+  if (day === 0) return addDays(date, 1);
+  return date;
 }
 
 export const DAILY_VISIT_TARGET = 5;

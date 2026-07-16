@@ -63,7 +63,7 @@ export async function createVisit(formData: FormData) {
       visit_type: (str(formData, "visit_type") as VisitType) ?? "normal",
       status,
       scheduled_date: str(formData, "scheduled_date"),
-      scheduled_time: status === "planned" ? str(formData, "scheduled_time") : null,
+      scheduled_time: status !== "cancelled" ? str(formData, "scheduled_time") : null,
       completed_date: status === "completed" ? str(formData, "completed_date") : null,
       notes: str(formData, "notes"),
       location_context: str(formData, "location_context"),
@@ -101,7 +101,7 @@ export async function updateVisit(visitId: string, formData: FormData) {
       visit_type: (str(formData, "visit_type") as VisitType) ?? "normal",
       status,
       scheduled_date: str(formData, "scheduled_date"),
-      scheduled_time: status === "planned" ? str(formData, "scheduled_time") : null,
+      scheduled_time: status !== "cancelled" ? str(formData, "scheduled_time") : null,
       completed_date: status === "completed" ? str(formData, "completed_date") : null,
       notes: str(formData, "notes"),
       location_context: str(formData, "location_context"),
@@ -126,7 +126,7 @@ export async function cancelVisit(visitId: string) {
 
   const { error } = await supabase
     .from("visits")
-    .update({ status: "cancelled" })
+    .update({ status: "cancelled", scheduled_time: null })
     .eq("id", visitId)
     .eq("status", "planned");
 

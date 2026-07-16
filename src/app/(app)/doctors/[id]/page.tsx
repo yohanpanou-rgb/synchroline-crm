@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
+import { formatDateGR } from "@/lib/constants/schedule";
 import { updateDoctor } from "../actions";
 import { getAssignableReps } from "@/lib/queries/reps";
 
@@ -108,7 +109,9 @@ export default async function DoctorDetailPage({
           {visits?.map((visit) => (
             <div key={visit.id} className="flex items-center justify-between py-2.5">
               <span className="text-sm text-ink">
-                {visit.scheduled_date ?? visit.completed_date ?? "—"}
+                {visit.scheduled_date || visit.completed_date
+                  ? formatDateGR(visit.scheduled_date ?? visit.completed_date!)
+                  : "—"}
               </span>
               <Badge tone={visit.status === "completed" ? "success" : "neutral"}>
                 {VISIT_STATUS_LABEL[visit.status]}

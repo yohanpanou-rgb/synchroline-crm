@@ -13,6 +13,7 @@ import {
   recalculateTargets,
 } from "./actions";
 import { getAssignableReps } from "@/lib/queries/reps";
+import { formatDateGR } from "@/lib/constants/schedule";
 
 export default async function CyclesPage({
   searchParams,
@@ -131,7 +132,7 @@ export default async function CyclesPage({
                 <div>
                   <p className="text-sm font-medium text-ink">{cycle.name}</p>
                   <p className="text-xs text-ink/50">
-                    {cycle.start_date} → {cycle.end_date}
+                    {formatDateGR(cycle.start_date)} → {formatDateGR(cycle.end_date)}
                   </p>
                 </div>
                 {cycle.is_active && <Badge tone="success">Ενεργός</Badge>}

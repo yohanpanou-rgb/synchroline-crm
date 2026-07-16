@@ -4,6 +4,7 @@ import { requireProfile } from "@/lib/supabase/profile";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
+import { formatDateGR } from "@/lib/constants/schedule";
 import { cancelVisit } from "./actions";
 
 const STATUS_TONE = {
@@ -66,7 +67,10 @@ export default async function VisitsPage() {
               </p>
               <p className="truncate text-xs text-ink/50">
                 {visit.profiles?.full_name} ·{" "}
-                {visit.scheduled_date ?? visit.completed_date ?? "—"} ·{" "}
+                {visit.scheduled_date || visit.completed_date
+                  ? formatDateGR(visit.scheduled_date ?? visit.completed_date!)
+                  : "—"}{" "}
+                ·{" "}
                 {visit.visit_type === "joint" ? "Κοινή επίσκεψη" : "Κανονική"}
               </p>
             </Link>

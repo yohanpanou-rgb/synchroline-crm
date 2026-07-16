@@ -18,19 +18,18 @@ export interface CalendarVisit {
   rep: { full_name: string } | null;
 }
 
-export async function getWeekVisits(
+export async function getVisitsInRange(
   supabase: Client,
-  { weekStartISO, weekEndISO, repId }: { weekStartISO: string; weekEndISO: string; repId?: string },
+  { startISO, endISO, repId }: { startISO: string; endISO: string; repId?: string },
 ): Promise<CalendarVisit[]> {
   let query = supabase
     .from("visits")
     .select(
       "id, doctor_id, scheduled_date, scheduled_time, status, doctors(last_name, first_name, region, county), profiles!visits_rep_id_fkey(full_name)",
     )
-    .eq("status", "planned")
-    .not("scheduled_time", "is", null)
-    .gte("scheduled_date", weekStartISO)
-    .lte("scheduled_date", weekEndISO)
+    .in("status", ["planned", "completed"])
+    .gte("scheduled_date", startISO)
+    .lte("scheduled_date", endISO)
     .order("scheduled_time");
 
   if (repId) {

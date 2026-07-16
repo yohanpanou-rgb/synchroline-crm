@@ -141,28 +141,37 @@ export function VisitForm({
           </Select>
         </Field>
 
-        <Field label={status === "completed" ? "Ημερομηνία ολοκλήρωσης" : "Ημερομηνία"}>
+        <Field label="Ημερομηνία επίσκεψης">
           <Input
             type="date"
-            name={status === "completed" ? "completed_date" : "scheduled_date"}
-            defaultValue={status === "completed" ? completedDefault : scheduledDefault}
+            name="scheduled_date"
+            defaultValue={scheduledDefault}
             required
           />
         </Field>
 
-        {status === "planned" && (
-          <Field label="Ώρα">
-            <Select
-              name="scheduled_time"
-              defaultValue={visit?.scheduled_time?.slice(0, 5) ?? defaultTime ?? ""}
-            >
-              <option value="">—</option>
-              {TIME_SLOTS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </Select>
+        <Field label="Ώρα">
+          <Select
+            name="scheduled_time"
+            defaultValue={visit?.scheduled_time?.slice(0, 5) ?? defaultTime ?? ""}
+          >
+            <option value="">—</option>
+            {TIME_SLOTS.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        {status === "completed" && (
+          <Field label="Ημερομηνία ολοκλήρωσης">
+            <Input
+              type="date"
+              name="completed_date"
+              defaultValue={completedDefault}
+              required
+            />
           </Field>
         )}
 
