@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import {
   createCycle,
+  updateCycle,
   setActiveCycle,
   setCycleTarget,
   recalculateTargets,
@@ -78,27 +79,65 @@ export default async function CyclesPage({
           {cycles?.length === 0 && (
             <p className="py-4 text-sm text-ink/50">Δεν υπάρχουν κύκλοι ακόμα.</p>
           )}
-          {cycles?.map((cycle) => (
-            <div key={cycle.id} className="flex items-center justify-between py-3">
-              <div>
-                <p className="text-sm font-medium text-ink">{cycle.name}</p>
-                <p className="text-xs text-ink/50">
-                  {cycle.start_date} → {cycle.end_date}
-                </p>
-              </div>
-              {cycle.is_active ? (
-                <Badge tone="success">Ενεργός</Badge>
-              ) : (
-                isAdmin && (
-                  <form action={setActiveCycle.bind(null, cycle.id)}>
+          {cycles?.map((cycle) =>
+            isAdmin ? (
+              <div key={cycle.id} className="py-3">
+                <form
+                  action={updateCycle.bind(null, cycle.id)}
+                  className="flex flex-wrap items-end gap-3"
+                >
+                  <div className="min-w-[160px] flex-1">
+                    <label className="mb-1 block text-xs text-ink/50">
+                      Όνομα
+                    </label>
+                    <Input name="name" defaultValue={cycle.name} required />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-ink/50">Από</label>
+                    <Input
+                      type="date"
+                      name="start_date"
+                      defaultValue={cycle.start_date}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-ink/50">Έως</label>
+                    <Input
+                      type="date"
+                      name="end_date"
+                      defaultValue={cycle.end_date}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" variant="secondary" size="md">
+                    Αποθήκευση
+                  </Button>
+                  {cycle.is_active && <Badge tone="success">Ενεργός</Badge>}
+                </form>
+                {!cycle.is_active && (
+                  <form
+                    action={setActiveCycle.bind(null, cycle.id)}
+                    className="mt-2"
+                  >
                     <Button type="submit" variant="secondary" size="md">
                       Ενεργοποίηση
                     </Button>
                   </form>
-                )
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            ) : (
+              <div key={cycle.id} className="flex items-center justify-between py-3">
+                <div>
+                  <p className="text-sm font-medium text-ink">{cycle.name}</p>
+                  <p className="text-xs text-ink/50">
+                    {cycle.start_date} → {cycle.end_date}
+                  </p>
+                </div>
+                {cycle.is_active && <Badge tone="success">Ενεργός</Badge>}
+              </div>
+            ),
+          )}
         </div>
       </Card>
 

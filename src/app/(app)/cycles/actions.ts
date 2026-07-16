@@ -69,6 +69,31 @@ export async function recalculateTargets(cycleId: string) {
   revalidatePath("/dashboard");
 }
 
+export async function updateCycle(cycleId: string, formData: FormData) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const name = str(formData, "name");
+  const startDate = str(formData, "start_date");
+  const endDate = str(formData, "end_date");
+
+  if (!name || !startDate || !endDate) {
+    redirect(`/cycles?error=${encodeURIComponent("Συμπλήρωσε όλα τα πεδία του κύκλου.")}`);
+  }
+
+  const { error } = await supabase
+    .from("cycles")
+    .update({ name: name!, start_date: startDate!, end_date: endDate! })
+    .eq("id", cycleId);
+
+  if (error) {
+    redirect(`/cycles?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/cycles");
+  revalidatePath("/dashboard");
+}
+
 export async function createCycle(formData: FormData) {
   const profile = await requireAdmin();
   const supabase = await createClient();
