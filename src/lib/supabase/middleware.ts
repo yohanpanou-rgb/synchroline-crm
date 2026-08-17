@@ -33,8 +33,13 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isPublicPath = PUBLIC_PATHS.some((p) => path.startsWith(p));
+  // API routes (cron jobs, fetch() calls) handle their own auth and must
+  // return JSON status codes, not an HTML redirect to /login — a redirect
+  // response is what a cron ping or fetch() would otherwise silently get
+  // instead of ever reaching the route handler.
+  const isApiPath = path.startsWith("/api/");
 
-  if (!user && !isPublicPath) {
+  if (!user && !isPublicPath && !isApiPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", path);
