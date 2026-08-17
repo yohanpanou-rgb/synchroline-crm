@@ -18,6 +18,7 @@ import {
 } from "@/lib/constants/schedule";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
 import { Button } from "@/components/ui/Button";
+import { DoctorHoverCard } from "@/components/visits/DoctorHoverCard";
 import { cn } from "@/lib/utils/cn";
 
 type ViewMode = "day" | "week" | "month";
@@ -36,7 +37,8 @@ function groupBySlot(visits: CalendarVisit[]) {
 function VisitChip({ visit, manager }: { visit: CalendarVisit; manager: boolean }) {
   const completed = visit.status === "completed";
   return (
-    <Link
+    <DoctorHoverCard
+      doctorId={visit.doctor_id}
       href={`/visits/${visit.id}/edit`}
       className={cn(
         "block rounded-lg px-2 py-1 text-xs leading-tight hover:opacity-80",
@@ -52,7 +54,7 @@ function VisitChip({ visit, manager }: { visit: CalendarVisit; manager: boolean 
         {[visit.doctor?.region, visit.doctor?.county].filter(Boolean).join(" · ") || "—"}
         {manager && visit.rep ? ` · ${visit.rep.full_name}` : ""}
       </p>
-    </Link>
+    </DoctorHoverCard>
   );
 }
 
@@ -393,8 +395,9 @@ async function MonthView({ supabase, anchor, repId, manager, repParam }: ViewPro
                       {dayVisits.length > 0 && (
                         <div className="mt-1 space-y-0.5">
                           {dayVisits.slice(0, 2).map((v) => (
-                            <Link
+                            <DoctorHoverCard
                               key={v.id}
+                              doctorId={v.doctor_id}
                               href={`/visits/${v.id}/edit`}
                               className={cn(
                                 "block truncate rounded px-1 py-0.5 text-[10px] leading-tight",
@@ -406,7 +409,7 @@ async function MonthView({ supabase, anchor, repId, manager, repParam }: ViewPro
                               {v.doctor
                                 ? formatDoctorName(v.doctor.last_name, v.doctor.first_name)
                                 : "—"}
-                            </Link>
+                            </DoctorHoverCard>
                           ))}
                           {dayVisits.length > 2 && (
                             <p className="px-1 text-[10px] text-ink/40">
