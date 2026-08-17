@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/supabase/profile";
 import { getAssignableReps } from "@/lib/queries/reps";
 import { countWorkdays, DAILY_VISIT_TARGET } from "@/lib/constants/schedule";
+import { sendWeeklyReport } from "@/lib/reports/send-weekly-report";
 
 const str = (formData: FormData, key: string) => {
   const v = formData.get(key);
@@ -181,4 +182,22 @@ export async function setCycleTarget(formData: FormData) {
 
   revalidatePath("/cycles");
   revalidatePath("/dashboard");
+}
+
+export async function sendWeeklyReportNow() {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  let recipients: string[] | undefined;
+  let errorMessage: string | undefined;
+  try {
+    ({ recipients } = await sendWeeklyReport(supabase));
+  } catch (err) {
+    errorMessage = err instanceof Error ? err.message : "Αποτυχία αποστολής";
+  }
+
+  if (errorMessage) {
+    redirect(`/cycles?error=${encodeURIComponent(errorMessage)}`);
+  }
+  redirect(`/cycles?sent=${encodeURIComponent(`Στάλθηκε στο: ${recipients!.join(", ")}`)}`);
 }

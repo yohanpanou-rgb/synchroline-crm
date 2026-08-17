@@ -11,6 +11,7 @@ import {
   setActiveCycle,
   setCycleTarget,
   recalculateTargets,
+  sendWeeklyReportNow,
 } from "./actions";
 import { getAssignableReps } from "@/lib/queries/reps";
 import { formatDateGR } from "@/lib/constants/schedule";
@@ -18,12 +19,12 @@ import { formatDateGR } from "@/lib/constants/schedule";
 export default async function CyclesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; sent?: string }>;
 }) {
   const profile = await requireProfile();
   if (profile.role === "rep") redirect("/dashboard");
   const isAdmin = profile.role === "admin";
-  const { error } = await searchParams;
+  const { error, sent } = await searchParams;
   const supabase = await createClient();
 
   const { data: cycles } = await supabase
@@ -52,6 +53,28 @@ export default async function CyclesPage({
         <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {error}
         </p>
+      )}
+      {sent && (
+        <p className="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
+          {sent}
+        </p>
+      )}
+
+      {isAdmin && (
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>Εβδομαδιαία αναφορά (email)</CardTitle>
+            <form action={sendWeeklyReportNow}>
+              <Button type="submit" variant="secondary" size="md">
+                Αποστολή τώρα
+              </Button>
+            </form>
+          </CardHeader>
+          <p className="text-xs text-ink/50">
+            Στέλνεται αυτόματα κάθε Δευτέρα. Το κουμπί στέλνει την αναφορά της
+            τρέχουσας εβδομάδας τώρα, για δοκιμή.
+          </p>
+        </Card>
       )}
 
       {isAdmin && (
