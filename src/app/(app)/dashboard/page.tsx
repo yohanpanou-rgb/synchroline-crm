@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import {
@@ -6,16 +7,66 @@ import {
   getAllRepsMetrics,
   type RepMetrics,
 } from "@/lib/queries/dashboard";
+import {
+  getRepRatingMetrics,
+  getAllRepsRatingMetrics,
+  type RepRatingMetrics,
+} from "@/lib/queries/rating";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PacingBar } from "@/components/dashboard/PacingBar";
+import { RatingStackedBar } from "@/components/dashboard/RatingStackedBar";
 import {
   getWeekPharmacyVisitCount,
   getAllRepsPharmacyMetrics,
 } from "@/lib/queries/pharmacies";
 import { getAssignableReps } from "@/lib/queries/reps";
 import { WEEKLY_PHARMACY_VISIT_TARGET } from "@/lib/constants/schedule";
+import { RATING_CPO_ALERT_THRESHOLD_PCT } from "@/lib/constants/rating";
+import { cn } from "@/lib/utils/cn";
+
+type RatingSortKey = "pendingPct" | "activePct" | "rating0Pct" | "repName";
+
+const RATING_SORT_LABEL: Record<RatingSortKey, string> = {
+  repName: "Rep",
+  activePct: "Ενεργοί %",
+  rating0Pct: "Χωρίς επίσκεψη %",
+  pendingPct: "ΥΔ %",
+};
+
+function sortRatingMetrics(
+  metrics: RepRatingMetrics[],
+  sortKey: RatingSortKey,
+): RepRatingMetrics[] {
+  const sorted = [...metrics];
+  if (sortKey === "repName") {
+    sorted.sort((a, b) => a.repName.localeCompare(b.repName, "el"));
+  } else {
+    sorted.sort((a, b) => b[sortKey] - a[sortKey]);
+  }
+  return sorted;
+}
+
+function RatingSortHeader({
+  sortKey,
+  activeSortKey,
+}: {
+  sortKey: RatingSortKey;
+  activeSortKey: RatingSortKey;
+}) {
+  return (
+    <Link
+      href={`/dashboard?ratingSort=${sortKey}#rating`}
+      className={cn(
+        "hover:text-primary",
+        sortKey === activeSortKey && "font-semibold text-primary-dark",
+      )}
+    >
+      {RATING_SORT_LABEL[sortKey]}
+    </Link>
+  );
+}
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
@@ -55,10 +106,19 @@ function RepRow({ metrics }: { metrics: RepMetrics }) {
   );
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ratingSort?: string }>;
+}) {
   const profile = await requireProfile();
   const supabase = await createClient();
   const cycle = await getActiveCycle(supabase);
+  const { ratingSort } = await searchParams;
+  const ratingSortKey: RatingSortKey =
+    ratingSort && ratingSort in RATING_SORT_LABEL
+      ? (ratingSort as RatingSortKey)
+      : "pendingPct";
 
   if (isManagerOrAdmin(profile.role)) {
     const repsMetrics = await getAllRepsMetrics(supabase, cycle);
@@ -70,6 +130,27 @@ export default async function DashboardPage() {
         : 0;
     const reps = await getAssignableReps(supabase);
     const pharmacyMetrics = await getAllRepsPharmacyMetrics(supabase, reps);
+    const ratingMetricsRaw = await getAllRepsRatingMetrics(supabase, cycle);
+    const ratingMetrics = sortRatingMetrics(ratingMetricsRaw, ratingSortKey);
+    const ratingTotals = ratingMetricsRaw.reduce(
+      (acc, r) => {
+        acc.total += r.total;
+        acc.activeCount += r.activeCount;
+        acc.rating0Count += r.rating0Count;
+        acc.pendingCount += r.pendingCount;
+        (["0", "1", "2", "3", "ΥΔ"] as const).forEach((k) => {
+          acc.ratingCounts[k] += r.ratingCounts[k];
+        });
+        return acc;
+      },
+      {
+        total: 0,
+        activeCount: 0,
+        rating0Count: 0,
+        pendingCount: 0,
+        ratingCounts: { "0": 0, "1": 0, "2": 0, "3": 0, ΥΔ: 0 },
+      },
+    );
 
     return (
       <div className="mx-auto max-w-4xl">
@@ -131,11 +212,119 @@ export default async function DashboardPage() {
             ))}
           </div>
         </Card>
+
+        <Card className="mt-6" id="rating">
+          <CardHeader>
+            <CardTitle>Αξιολόγηση Πελατολογίου</CardTitle>
+          </CardHeader>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead>
+                <tr className="border-b border-black/5 text-left text-xs text-ink/50">
+                  <th className="py-2 pr-3 font-medium">
+                    <RatingSortHeader sortKey="repName" activeSortKey={ratingSortKey} />
+                  </th>
+                  <th className="py-2 pr-3 font-medium">Σύνολο</th>
+                  <th className="py-2 pr-3 font-medium">
+                    <RatingSortHeader sortKey="activePct" activeSortKey={ratingSortKey} />
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <RatingSortHeader sortKey="rating0Pct" activeSortKey={ratingSortKey} />
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <RatingSortHeader sortKey="pendingPct" activeSortKey={ratingSortKey} />
+                  </th>
+                  <th className="py-2 pr-3 font-medium">Κατανομή 1/2/3/0/ΥΔ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/5">
+                {ratingMetrics.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-4 text-sm text-ink/50">
+                      Δεν υπάρχουν reps.
+                    </td>
+                  </tr>
+                )}
+                {ratingMetrics.map((m) => (
+                  <tr key={m.repId}>
+                    <td className="py-2.5 pr-3 font-medium text-ink">{m.repName}</td>
+                    <td className="py-2.5 pr-3 tabular-nums text-ink/70">{m.total}</td>
+                    <td className="py-2.5 pr-3 tabular-nums text-ink/70">
+                      {m.activeCount} ({m.activePct.toFixed(0)}%)
+                    </td>
+                    <td className="py-2.5 pr-3 tabular-nums text-ink/70">
+                      {m.rating0Count} ({m.rating0Pct.toFixed(0)}%)
+                    </td>
+                    <td className="py-2.5 pr-3">
+                      <Badge
+                        tone={
+                          m.pendingPct > RATING_CPO_ALERT_THRESHOLD_PCT
+                            ? "danger"
+                            : "neutral"
+                        }
+                      >
+                        {m.pendingCount} ({m.pendingPct.toFixed(0)}%)
+                      </Badge>
+                    </td>
+                    <td className="py-2.5 pr-3">
+                      <div className="w-32">
+                        <RatingStackedBar counts={m.ratingCounts} total={m.total} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              {ratingMetrics.length > 0 && (
+                <tfoot>
+                  <tr className="border-t border-black/10 font-semibold text-ink">
+                    <td className="py-2.5 pr-3">Σύνολο</td>
+                    <td className="py-2.5 pr-3 tabular-nums">{ratingTotals.total}</td>
+                    <td className="py-2.5 pr-3 tabular-nums">
+                      {ratingTotals.activeCount} (
+                      {ratingTotals.total > 0
+                        ? ((ratingTotals.activeCount / ratingTotals.total) * 100).toFixed(0)
+                        : 0}
+                      %)
+                    </td>
+                    <td className="py-2.5 pr-3 tabular-nums">
+                      {ratingTotals.rating0Count} (
+                      {ratingTotals.total > 0
+                        ? ((ratingTotals.rating0Count / ratingTotals.total) * 100).toFixed(0)
+                        : 0}
+                      %)
+                    </td>
+                    <td className="py-2.5 pr-3 tabular-nums">
+                      {ratingTotals.pendingCount} (
+                      {ratingTotals.total > 0
+                        ? ((ratingTotals.pendingCount / ratingTotals.total) * 100).toFixed(0)
+                        : 0}
+                      %)
+                    </td>
+                    <td className="py-2.5 pr-3">
+                      <div className="w-32">
+                        <RatingStackedBar
+                          counts={ratingTotals.ratingCounts}
+                          total={ratingTotals.total}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </Card>
       </div>
     );
   }
 
   const metrics = await getRepMetrics(supabase, profile.id, profile.full_name, cycle);
+  const ratingMetrics = await getRepRatingMetrics(
+    supabase,
+    profile.id,
+    profile.full_name,
+    cycle,
+  );
   const pharmacyCount = await getWeekPharmacyVisitCount(supabase, profile.id);
 
   return (
@@ -181,6 +370,66 @@ export default async function DashboardPage() {
             Δεν έχει οριστεί ενεργός κύκλος από τον admin.
           </p>
         )}
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Αξιολόγηση Πελατολογίου</CardTitle>
+        </CardHeader>
+        <div className="mb-4 grid grid-cols-3 gap-3">
+          <div>
+            <p className="text-xs text-ink/50">Ενεργοί (1+2+3)</p>
+            <p className="mt-0.5 text-lg font-semibold tabular-nums text-primary-dark">
+              {ratingMetrics.activeCount}
+              <span className="ml-1 text-xs font-normal text-ink/50">
+                {ratingMetrics.activePct.toFixed(0)}%
+              </span>
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-ink/50">Χωρίς επίσκεψη</p>
+            <p className="mt-0.5 text-lg font-semibold tabular-nums text-ink">
+              {ratingMetrics.rating0Count}
+              <span className="ml-1 text-xs font-normal text-ink/50">
+                {ratingMetrics.rating0Pct.toFixed(0)}%
+              </span>
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-ink/50">Υπό διερεύνηση (ΥΔ)</p>
+            <p
+              className={cn(
+                "mt-0.5 text-lg font-semibold tabular-nums",
+                ratingMetrics.pendingPct > RATING_CPO_ALERT_THRESHOLD_PCT
+                  ? "text-danger"
+                  : "text-ink",
+              )}
+            >
+              {ratingMetrics.pendingCount}
+              <span className="ml-1 text-xs font-normal text-ink/50">
+                {ratingMetrics.pendingPct.toFixed(0)}%
+              </span>
+            </p>
+          </div>
+        </div>
+        {ratingMetrics.pendingPct > RATING_CPO_ALERT_THRESHOLD_PCT && (
+          <Badge tone="danger" className="mb-4">
+            Πάνω από {RATING_CPO_ALERT_THRESHOLD_PCT}% του πελατολογίου είναι
+            «Υπό διερεύνηση»
+          </Badge>
+        )}
+        <div>
+          <div className="mb-1.5 flex justify-between text-xs">
+            <span className="text-ink/50">Κάλυψη ενεργών γιατρών στον κύκλο</span>
+            <span className="tabular-nums font-medium text-ink">
+              {ratingMetrics.activeCoveragePct.toFixed(0)}%
+            </span>
+          </div>
+          <ProgressBar
+            value={ratingMetrics.activeCoveragePct}
+            colorClassName="bg-primary"
+          />
+        </div>
       </Card>
 
       <Card className="mt-6">

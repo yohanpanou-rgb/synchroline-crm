@@ -10,7 +10,10 @@ import type {
   DynamicCategory,
   HqType,
   PriorityColor,
+  RatingCpo,
 } from "@/lib/types/database.types";
+
+const RATING_CPO_VALUES: RatingCpo[] = ["0", "1", "2", "3", "ΥΔ"];
 
 const str = (formData: FormData, key: string) => {
   const v = formData.get(key);
@@ -177,4 +180,36 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
   revalidatePath("/doctors");
   revalidatePath(`/doctors/${doctorId}`);
   redirect(`/doctors/${doctorId}`);
+}
+
+/**
+ * Καλείται απευθείας από client component (όχι μέσω <form>), γι' αυτό
+ * επιστρέφει { error } αντί για redirect. Η πραγματική προστασία ώστε ένας
+ * rep να αλλάζει ΜΟΝΟ rating_cpo (και μόνο σε δικούς του γιατρούς) γίνεται
+ * στη βάση (RLS policy + trigger, migration 0012) — αυτός ο έλεγχος εδώ
+ * είναι απλώς για γρήγορο, φιλικό μήνυμα σφάλματος.
+ */
+export async function updateDoctorRating(
+  doctorId: string,
+  rating: string,
+): Promise<{ error?: string }> {
+  await requireProfile();
+  if (!RATING_CPO_VALUES.includes(rating as RatingCpo)) {
+    return { error: "Μη έγκυρη τιμή αξιολόγησης" };
+  }
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("doctors")
+    .update({ rating_cpo: rating as RatingCpo })
+    .eq("id", doctorId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/doctors/${doctorId}`);
+  revalidatePath("/doctors");
+  revalidatePath("/dashboard");
+  return {};
 }

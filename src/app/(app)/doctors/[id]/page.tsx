@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { DoctorForm } from "@/components/doctors/DoctorForm";
 import { DoctorDetailView } from "@/components/doctors/DoctorDetailView";
+import { RatingCpoControl } from "@/components/doctors/RatingCpoControl";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -83,6 +84,10 @@ export default async function DoctorDetailPage({
           {error}
         </p>
       )}
+
+      <Card className="mb-4">
+        <RatingCpoControl doctorId={doctor.id} initialValue={doctor.rating_cpo} />
+      </Card>
 
       <Card className="mb-4">
         {manager ? (

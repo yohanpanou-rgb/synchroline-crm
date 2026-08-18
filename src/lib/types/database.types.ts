@@ -10,6 +10,7 @@ export type VisitType = "normal" | "joint";
 export type VisitStatus = "planned" | "completed" | "cancelled";
 export type ProductName = "aknicare" | "closebax" | "terproline" | "rosacure";
 export type HqType = "ΕΔΡΑ" | "ΕΠΑΡΧΙΑ";
+export type RatingCpo = "0" | "1" | "2" | "3" | "ΥΔ";
 
 export interface Database {
   __InternalSupabase: {
@@ -94,6 +95,7 @@ export interface Database {
           address: string | null;
           notes: string | null;
           hq_type: HqType | null;
+          rating_cpo: RatingCpo;
           created_at: string;
           updated_at: string;
         };
@@ -124,6 +126,7 @@ export interface Database {
           address: string | null;
           notes: string | null;
           hq_type: HqType | null;
+          rating_cpo: RatingCpo;
         }> & {
           last_name: string;
           first_name: string;
@@ -157,6 +160,7 @@ export interface Database {
           address: string | null;
           notes: string | null;
           hq_type: HqType | null;
+          rating_cpo: RatingCpo;
         }>;
         Relationships: [
           {
