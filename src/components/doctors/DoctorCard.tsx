@@ -1,9 +1,18 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
-import type { Database } from "@/lib/types/database.types";
+import { RATING_CPO_LABEL } from "@/lib/constants/rating";
+import type { Database, RatingCpo } from "@/lib/types/database.types";
 
 type Doctor = Database["public"]["Tables"]["doctors"]["Row"];
+
+const RATING_TONE: Record<RatingCpo, "success" | "warning" | "danger" | "neutral"> = {
+  "1": "success",
+  "2": "neutral",
+  "3": "warning",
+  "0": "neutral",
+  ΥΔ: "danger",
+};
 
 const PRIORITY_TONE = {
   green: "success",
@@ -38,6 +47,9 @@ export function DoctorCard({ doctor }: { doctor: Doctor }) {
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
+        <Badge tone={RATING_TONE[doctor.rating_cpo]}>
+          {RATING_CPO_LABEL[doctor.rating_cpo]}
+        </Badge>
         {doctor.priority_color && (
           <Badge tone={PRIORITY_TONE[doctor.priority_color]}>
             {PRIORITY_LABEL[doctor.priority_color]}

@@ -5,6 +5,8 @@ import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { DoctorForm } from "@/components/doctors/DoctorForm";
 import { DoctorDetailView } from "@/components/doctors/DoctorDetailView";
 import { RatingCpoControl } from "@/components/doctors/RatingCpoControl";
+import { ActivityHistory } from "@/components/audit/ActivityHistory";
+import { getRecordHistory } from "@/lib/queries/audit";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -60,6 +62,7 @@ export default async function DoctorDetailPage({
     .limit(10);
 
   const reps = manager ? await getAssignableReps(supabase) : [];
+  const history = manager ? await getRecordHistory(supabase, "doctors", id) : [];
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -125,6 +128,15 @@ export default async function DoctorDetailPage({
           ))}
         </div>
       </Card>
+
+      {manager && (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Ιστορικό αλλαγών</CardTitle>
+          </CardHeader>
+          <ActivityHistory entries={history} />
+        </Card>
+      )}
     </div>
   );
 }

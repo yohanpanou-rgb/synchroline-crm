@@ -2,8 +2,10 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { getAssignableReps } from "@/lib/queries/reps";
-import { Card } from "@/components/ui/Card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { VisitForm } from "@/components/visits/VisitForm";
+import { ActivityHistory } from "@/components/audit/ActivityHistory";
+import { getRecordHistory } from "@/lib/queries/audit";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
 import { updateVisit } from "../../actions";
 import type { ProductName } from "@/lib/types/database.types";
@@ -39,6 +41,7 @@ export default async function EditVisitPage({
   ) as Partial<Record<ProductName, { samples_given: number; notes: string | null }>>;
 
   const reps = manager ? await getAssignableReps(supabase) : undefined;
+  const history = manager ? await getRecordHistory(supabase, "visits", id) : [];
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -79,6 +82,15 @@ export default async function EditVisitPage({
           submitLabel="Αποθήκευση"
         />
       </Card>
+
+      {manager && (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Ιστορικό αλλαγών</CardTitle>
+          </CardHeader>
+          <ActivityHistory entries={history} />
+        </Card>
+      )}
     </div>
   );
 }

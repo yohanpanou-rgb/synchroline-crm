@@ -11,6 +11,7 @@ export type VisitStatus = "planned" | "completed" | "cancelled";
 export type ProductName = "aknicare" | "closebax" | "terproline" | "rosacure";
 export type HqType = "ΕΔΡΑ" | "ΕΠΑΡΧΙΑ";
 export type RatingCpo = "0" | "1" | "2" | "3" | "ΥΔ";
+export type AuditAction = "insert" | "update" | "delete";
 
 export interface Database {
   __InternalSupabase: {
@@ -438,6 +439,29 @@ export interface Database {
             columns: ["nearby_doctor_id"];
             isOneToOne: false;
             referencedRelation: "doctors";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      activity_audit_log: {
+        Row: {
+          id: string;
+          table_name: string;
+          record_id: string;
+          action: AuditAction;
+          changed_by: string | null;
+          changed_at: string;
+          old_data: Record<string, unknown> | null;
+          new_data: Record<string, unknown> | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "activity_audit_log_changed_by_fkey";
+            columns: ["changed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
