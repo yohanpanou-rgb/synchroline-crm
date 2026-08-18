@@ -466,6 +466,19 @@ export interface Database {
           },
         ];
       };
+      login_rate_limits: {
+        Row: {
+          id: string;
+          identifier: string;
+          attempted_at: string;
+        };
+        Insert: {
+          identifier: string;
+          attempted_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
