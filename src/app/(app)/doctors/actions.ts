@@ -77,7 +77,8 @@ export async function createDoctor(formData: FormData) {
     await supabase.from("bricks").upsert({ code: brickCode, name: brickName });
   }
 
-  const currentRepId = manager ? str(formData, "current_rep_id") : profile.id;
+  const institution = manager ? str(formData, "institution") : null;
+  const currentRepId = institution ? null : manager ? str(formData, "current_rep_id") : profile.id;
   const status: DoctorStatus = manager
     ? ((str(formData, "status") as DoctorStatus) ?? "pending_approval")
     : "pending_approval";
@@ -100,6 +101,8 @@ export async function createDoctor(formData: FormData) {
       weekly_rx_terproline: str(formData, "weekly_rx_terproline"),
       weekly_rx_rosacure: num(formData, "weekly_rx_rosacure"),
       current_rep_id: currentRepId,
+      institution,
+      academic_title: manager ? str(formData, "academic_title") : null,
       status,
       specialty: str(formData, "specialty"),
       phone_1: str(formData, "phone_1"),
@@ -148,7 +151,12 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
     await supabase.from("bricks").upsert({ code: brickCode, name: brickName });
   }
 
-  const currentRepId = manager ? str(formData, "current_rep_id") : undefined;
+  const institution = manager ? str(formData, "institution") : undefined;
+  const currentRepId = manager
+    ? institution
+      ? null
+      : str(formData, "current_rep_id")
+    : undefined;
 
   const { error } = await supabase
     .from("doctors")
@@ -176,6 +184,8 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
         ? {
             brick_code: brickCode ?? null,
             current_rep_id: currentRepId ?? null,
+            institution: institution ?? null,
+            academic_title: str(formData, "academic_title"),
             status: (str(formData, "status") as DoctorStatus) ?? "active",
           }
         : {}),

@@ -16,6 +16,7 @@ import { formatDoctorName } from "@/lib/utils/name-normalization";
 import { formatDateGR } from "@/lib/constants/schedule";
 import { updateDoctor } from "../actions";
 import { getAssignableReps } from "@/lib/queries/reps";
+import { getInstitutionsList } from "@/lib/queries/institutions";
 
 const STATUS_TONE = {
   active: "success",
@@ -64,6 +65,7 @@ export default async function DoctorDetailPage({
     .limit(10);
 
   const reps = manager ? await getAssignableReps(supabase) : [];
+  const institutions = manager ? await getInstitutionsList(supabase) : [];
   const history = manager ? await getRecordHistory(supabase, "doctors", id) : [];
   const pharmacyLinks = await getDoctorPharmacies(supabase, id);
 
@@ -106,6 +108,7 @@ export default async function DoctorDetailPage({
           isManager={manager}
           doctor={doctor}
           reps={reps}
+          institutions={institutions}
           submitLabel="Αποθήκευση"
         />
       </Card>

@@ -102,6 +102,7 @@ export interface Database {
           hq_type: HqType | null;
           rating_cpo: RatingCpo;
           institution: string | null;
+          academic_title: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -134,6 +135,7 @@ export interface Database {
           hq_type: HqType | null;
           rating_cpo: RatingCpo;
           institution: string | null;
+          academic_title: string | null;
         }> & {
           last_name: string;
           first_name: string;
@@ -169,6 +171,7 @@ export interface Database {
           hq_type: HqType | null;
           rating_cpo: RatingCpo;
           institution: string | null;
+          academic_title: string | null;
         }>;
         Relationships: [
           {
@@ -589,6 +592,20 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      institutions: {
+        Row: {
+          id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          name: string;
+        };
+        Update: Partial<{
+          name: string;
+        }>;
+        Relationships: [];
       };
     };
     Views: Record<string, never>;

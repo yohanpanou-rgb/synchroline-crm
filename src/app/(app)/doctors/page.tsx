@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/supabase/profile";
 import { DoctorCard } from "@/components/doctors/DoctorCard";
-import { Input } from "@/components/ui/Input";
+import { DoctorsSearchBar } from "@/components/doctors/DoctorsSearchBar";
 import { Button } from "@/components/ui/Button";
 import { RATING_CPO_OPTIONS } from "@/lib/constants/rating";
 import type { RatingCpo } from "@/lib/types/database.types";
@@ -83,27 +83,11 @@ export default async function DoctorsPage({
         </div>
       </div>
 
-      <form className="mb-3 flex gap-2">
-        {rating && <input type="hidden" name="rating" value={rating} />}
-        <Input
-          type="search"
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Αναζήτηση με επώνυμο ή όνομα…"
-        />
-        <select
-          name="region"
-          defaultValue={region ?? ""}
-          className="h-11 shrink-0 rounded-xl border border-black/10 bg-white px-3 text-sm text-ink"
-        >
-          <option value="">Όλες οι περιοχές</option>
-          {regions.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </form>
+      <DoctorsSearchBar
+        initialQuery={q ?? ""}
+        regions={regions}
+        initialRegion={region ?? ""}
+      />
 
       <div className="mb-5 flex flex-wrap gap-2">
         <Link

@@ -826,3 +826,64 @@ $$;
 -- migration — ζητήθηκε ρητά ανοιχτό ("1,2,3 κλπ").
 alter table public.doctors
   drop constraint if exists doctors_priority_color_check;
+
+
+-- Κανονικός κατάλογος νοσοκομείων (π.χ. Σύγγρος) — ξεχωριστός από
+-- doctors.institution (ελεύθερο κείμενο, βλ. migration 0018). Αυτός ο
+-- πίνακας δίνει μια σταθερή λίστα ονομάτων για το dropdown/επιλογή, και
+-- επιτρέπει να "υπάρχει" ένα νοσοκομείο ακόμα κι αν δεν έχει ακόμα κανέναν
+-- γιατρό. Δεν είναι FK στο doctors.institution σκόπιμα — ίδια χαλαρή
+-- σύνδεση με το πώς είναι φτιαγμένα pharmacies/bricks σε αυτό το schema.
+create table public.institutions (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+
+alter table public.institutions enable row level security;
+
+create policy "institutions_select_all" on public.institutions
+  for select using (auth.role() = 'authenticated');
+
+create policy "institutions_write_manager" on public.institutions
+  for all using (public.current_user_role() in ('manager', 'admin'))
+  with check (public.current_user_role() in ('manager', 'admin'));
+
+insert into public.institutions (name) values ('ΣΥΓΓΡΟΣ');
+
+
+-- Η προτεραιότητα (priority_color) δεν είναι πλέον ανεξάρτητο χειροκίνητο
+-- πεδίο — παράγεται αυτόματα από το rating_cpo (1→'1', 2→'2', 3→'3',
+-- ΥΔ/0→καμία προτεραιότητα). Trigger, όχι application code, ώστε να
+-- ισχύει από ΟΠΟΥΔΗΠΟΤΕ αλλάζει το rating_cpo (UI, RatingCpoControl,
+-- scripts) χωρίς να χρειάζεται να το θυμάται κάθε caller.
+create or replace function public.sync_doctor_priority_from_rating()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.priority_color := case new.rating_cpo
+    when '1' then '1'
+    when '2' then '2'
+    when '3' then '3'
+    else null
+  end;
+  return new;
+end;
+$$;
+
+-- Το όνομα ξεκινάει με "sync" ώστε αλφαβητικά να τρέχει ΜΕΤΑ το
+-- trg_doctors_restrict_rep_updates (r < s) — υπολογίζει priority πάνω στην
+-- ΤΕΛΙΚΗ τιμή rating_cpo, μετά τον περιορισμό ανά ρόλο.
+create trigger trg_doctors_sync_priority
+  before insert or update on public.doctors
+  for each row execute function public.sync_doctor_priority_from_rating();
+
+update public.doctors set rating_cpo = rating_cpo;
+
+
+-- Τίτλος (κυρίως για νοσοκομειακούς γιατρούς) — ελεύθερο κείμενο, χωρίς
+-- CHECK constraint, ίδια λογική με τα υπόλοιπα evolvable πεδία κατηγορίας
+-- σε αυτό το schema (η λίστα τιμών ζει στο UI <Select>, όχι στη βάση).
+alter table public.doctors
+  add column academic_title text;

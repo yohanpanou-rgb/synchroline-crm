@@ -1,11 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { DoctorCard } from "@/components/doctors/DoctorCard";
+import { AssignDoctorWidget } from "@/components/hospitals/AssignDoctorWidget";
 import type { InstitutionGroup } from "@/lib/queries/institutions";
 import { cn } from "@/lib/utils/cn";
 
-export function HospitalAccordion({ groups }: { groups: InstitutionGroup[] }) {
+export function HospitalAccordion({
+  groups,
+  manager,
+}: {
+  groups: InstitutionGroup[];
+  manager: boolean;
+}) {
   const [openName, setOpenName] = useState<string | null>(groups[0]?.name ?? null);
 
   return (
@@ -39,10 +47,31 @@ export function HospitalAccordion({ groups }: { groups: InstitutionGroup[] }) {
               </span>
             </button>
             {isOpen && (
-              <div className="space-y-2 border-t border-black/5 p-3">
-                {group.doctors.map((doctor) => (
-                  <DoctorCard key={doctor.id} doctor={doctor} />
-                ))}
+              <div className="space-y-3 border-t border-black/5 p-3">
+                {manager && (
+                  <div className="flex flex-wrap items-center gap-2 rounded-xl bg-ink/5 p-2">
+                    <div className="min-w-[220px] flex-1">
+                      <AssignDoctorWidget institution={group.name} />
+                    </div>
+                    <Link
+                      href={`/doctors/new?institution=${encodeURIComponent(group.name)}`}
+                      className="whitespace-nowrap text-xs font-medium text-primary hover:underline"
+                    >
+                      + Νέος γιατρός εδώ
+                    </Link>
+                  </div>
+                )}
+                {group.doctors.length === 0 ? (
+                  <p className="py-2 text-center text-sm text-ink/50">
+                    Δεν έχει ανατεθεί ακόμα κανένας γιατρός.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {group.doctors.map((doctor) => (
+                      <DoctorCard key={doctor.id} doctor={doctor} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

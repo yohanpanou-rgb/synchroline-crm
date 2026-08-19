@@ -10,16 +10,32 @@ export interface InstitutionGroup {
   doctors: Doctor[];
 }
 
-/** Όλοι οι γιατροί ιδρύματος, ομαδοποιημένοι ανά νοσοκομείο. */
+/** Κανονικός κατάλογος νοσοκομείων (για dropdown/επιλογή). */
+export async function getInstitutionsList(supabase: Client): Promise<string[]> {
+  const { data } = await supabase.from("institutions").select("name").order("name");
+  return (data ?? []).map((r) => r.name);
+}
+
+/**
+ * Όλα τα νοσοκομεία από τον κατάλογο, με τους γιατρούς τους (άδεια λίστα αν
+ * δεν έχει ανατεθεί ακόμα κανείς) — έτσι ένα νοσοκομείο εμφανίζεται στη
+ * λίστα ακόμα κι αν δεν έχει γιατρούς ακόμα.
+ */
 export async function getInstitutionGroups(supabase: Client): Promise<InstitutionGroup[]> {
-  const { data } = await supabase
-    .from("doctors")
-    .select("*")
-    .not("institution", "is", null)
-    .order("last_name", { ascending: true });
+  const [{ data: institutions }, { data: doctors }] = await Promise.all([
+    supabase.from("institutions").select("name").order("name"),
+    supabase
+      .from("doctors")
+      .select("*")
+      .not("institution", "is", null)
+      .order("last_name", { ascending: true }),
+  ]);
 
   const byName = new Map<string, Doctor[]>();
-  for (const d of data ?? []) {
+  for (const name of (institutions ?? []).map((i) => i.name)) {
+    byName.set(name, []);
+  }
+  for (const d of doctors ?? []) {
     const name = d.institution!;
     const arr = byName.get(name) ?? [];
     arr.push(d);
@@ -27,7 +43,7 @@ export async function getInstitutionGroups(supabase: Client): Promise<Institutio
   }
 
   return [...byName.entries()]
-    .map(([name, doctors]) => ({ name, doctors }))
+    .map(([name, docs]) => ({ name, doctors: docs }))
     .sort((a, b) => b.doctors.length - a.doctors.length);
 }
 

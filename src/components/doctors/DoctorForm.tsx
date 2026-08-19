@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
+import { ACADEMIC_TITLES } from "@/lib/constants/academic-titles";
 import type { Database } from "@/lib/types/database.types";
 
 type Doctor = Database["public"]["Tables"]["doctors"]["Row"];
@@ -29,12 +30,16 @@ export function DoctorForm({
   isManager,
   doctor,
   reps,
+  institutions,
+  defaultInstitution,
   submitLabel,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   isManager: boolean;
   doctor?: Doctor;
   reps?: Pick<Profile, "id" | "full_name">[];
+  institutions?: string[];
+  defaultInstitution?: string;
   submitLabel: string;
 }) {
   const fullNameDefault =
@@ -98,15 +103,10 @@ export function DoctorForm({
           </Select>
         </Field>
         <Field label="Προτεραιότητα">
-          <Select
-            name="priority_color"
-            defaultValue={doctor?.priority_color ?? ""}
-          >
-            <option value="">—</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-          </Select>
+          <p className="flex h-11 items-center text-sm text-ink/50">
+            {doctor?.priority_color ?? "—"}{" "}
+            <span className="ml-1 text-xs">(αυτόματα από την αξιολόγηση)</span>
+          </p>
         </Field>
 
         <Field label="Φαρμακείο 1">
@@ -201,6 +201,35 @@ export function DoctorForm({
               </Select>
             </Field>
           </div>
+
+          <div>
+            <Field label="Νοσοκομείο (κοινόχρηστο πελατολόγιο)">
+              <Input
+                name="institution"
+                list="institutions-list"
+                defaultValue={doctor?.institution ?? defaultInstitution ?? ""}
+                placeholder="— Κανένα (προσωπικό πελατολόγιο) —"
+              />
+              <datalist id="institutions-list">
+                {institutions?.map((name) => <option key={name} value={name} />)}
+              </datalist>
+            </Field>
+            <p className="mt-1 text-xs text-ink/50">
+              Αν οριστεί, ο γιατρός γίνεται κοινόχρηστος (Νοσοκομεία) και ο
+              «Υπεύθυνος rep» παραπάνω αγνοείται.
+            </p>
+          </div>
+
+          <Field label="Τίτλος (νοσοκομειακοί γιατροί)">
+            <Select name="academic_title" defaultValue={doctor?.academic_title ?? ""}>
+              <option value="">—</option>
+              {ACADEMIC_TITLES.map((title) => (
+                <option key={title} value={title}>
+                  {title}
+                </option>
+              ))}
+            </Select>
+          </Field>
         </>
       )}
 

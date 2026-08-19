@@ -5,20 +5,23 @@ import { Card } from "@/components/ui/Card";
 import { BackButton } from "@/components/ui/BackButton";
 import { createDoctor } from "../actions";
 import { getAssignableReps } from "@/lib/queries/reps";
+import { getInstitutionsList } from "@/lib/queries/institutions";
 
 export default async function NewDoctorPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; institution?: string }>;
 }) {
   const profile = await requireProfile();
-  const { error } = await searchParams;
+  const { error, institution } = await searchParams;
   const manager = isManagerOrAdmin(profile.role);
 
   let reps: { id: string; full_name: string }[] = [];
+  let institutions: string[] = [];
   if (manager) {
     const supabase = await createClient();
     reps = await getAssignableReps(supabase);
+    institutions = await getInstitutionsList(supabase);
   }
 
   return (
@@ -44,6 +47,8 @@ export default async function NewDoctorPage({
           action={createDoctor}
           isManager={manager}
           reps={reps}
+          institutions={institutions}
+          defaultInstitution={institution}
           submitLabel={manager ? "Δημιουργία γιατρού" : "Υποβολή πρότασης"}
         />
       </Card>
