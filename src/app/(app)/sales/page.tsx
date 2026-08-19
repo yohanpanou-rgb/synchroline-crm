@@ -282,7 +282,7 @@ export default async function SalesPage({
           <table className="w-full min-w-[420px] text-sm">
             <thead>
               <tr className="border-b border-black/5 text-left text-xs text-ink/50">
-                <th className="py-2 pr-3 font-medium">Κωδικός</th>
+                <th className="py-2 pr-3 font-medium">Περιγραφή</th>
                 <th className="py-2 pr-3 font-medium">Αξία</th>
                 <th className="py-2 pr-3 font-medium">Τεμάχια</th>
                 <th className="py-2 pr-3 font-medium">YoY</th>
@@ -298,7 +298,9 @@ export default async function SalesPage({
               )}
               {byProductCode.slice(0, 30).map((row) => (
                 <tr key={row.key}>
-                  <td className="py-2 pr-3 font-medium text-ink">{row.key}</td>
+                  <td className="py-2 pr-3 font-medium text-ink" title={row.key}>
+                    {row.label}
+                  </td>
                   <td className="py-2 pr-3 tabular-nums">{fmtEuro(row.value)}</td>
                   <td className="py-2 pr-3 tabular-nums">{fmtUnits(row.units)}</td>
                   <td className="py-2 pr-3">

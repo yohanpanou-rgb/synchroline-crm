@@ -29,7 +29,7 @@ export default async function DoctorsPage({
 }: {
   searchParams: Promise<{ q?: string; rating?: string }>;
 }) {
-  await requireProfile();
+  const profile = await requireProfile();
   const { q, rating } = await searchParams;
   const supabase = await createClient();
 
@@ -53,9 +53,16 @@ export default async function DoctorsPage({
         <h1 className="text-xl font-semibold text-primary-dark">
           Πελατολόγιο
         </h1>
-        <Link href="/doctors/new">
-          <Button size="md">+ Νέος γιατρός</Button>
-        </Link>
+        <div className="flex gap-2">
+          {profile.role === "admin" && (
+            <Link href="/doctors/import">
+              <Button variant="secondary" size="md">Εισαγωγή αρχείου</Button>
+            </Link>
+          )}
+          <Link href="/doctors/new">
+            <Button size="md">+ Νέος γιατρός</Button>
+          </Link>
+        </div>
       </div>
 
       <form className="mb-3">

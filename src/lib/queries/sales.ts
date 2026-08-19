@@ -99,25 +99,35 @@ export async function getSalesSummary(
 
 export interface SalesGroupRow {
   key: string;
+  label: string;
   value: number;
   units: number;
   valueYoyPct: number | null;
+}
+
+interface GroupedTotals extends SalesTotals {
+  label: string;
 }
 
 async function fetchGrouped(
   supabase: Client,
   filters: SalesFilters,
   groupField: "sub_brand" | "product_code" | "nomos",
-): Promise<Map<string, SalesTotals>> {
+): Promise<Map<string, GroupedTotals>> {
+  const extraCols = groupField === "product_code" ? ", product_description" : "";
   const rows = (await fetchRows(
     supabase,
     filters,
-    `${groupField}, quantity, net_value`,
-  )) as unknown as Record<string, string | number>[];
-  const map = new Map<string, SalesTotals>();
+    `${groupField}, quantity, net_value${extraCols}`,
+  )) as unknown as Record<string, string | number | null>[];
+  const map = new Map<string, GroupedTotals>();
   for (const row of rows) {
     const key = String(row[groupField] ?? "—");
-    const entry = map.get(key) ?? { value: 0, units: 0 };
+    const entry = map.get(key) ?? {
+      value: 0,
+      units: 0,
+      label: groupField === "product_code" ? String(row.product_description ?? key) : key,
+    };
     entry.value += Number(row.net_value);
     entry.units += Number(row.quantity);
     map.set(key, entry);
@@ -148,7 +158,7 @@ export async function getSalesByGroup(
     const prev = lastYear.get(key);
     const valueYoyPct =
       prev && prev.value > 0 ? ((totals.value - prev.value) / prev.value) * 100 : null;
-    rows.push({ key, value: totals.value, units: totals.units, valueYoyPct });
+    rows.push({ key, label: totals.label, value: totals.value, units: totals.units, valueYoyPct });
   }
   return rows.sort((a, b) => b.value - a.value);
 }

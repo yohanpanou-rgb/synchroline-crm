@@ -413,8 +413,8 @@ export default async function DashboardPage({
 
       <div className="mb-6 grid grid-cols-2 gap-3">
         <StatCard
-          label="Γιατροί πελατολογίου"
-          value={String(metrics.territorySize)}
+          label="Γιατροί πελατολογίου (1+2+3)"
+          value={String(ratingMetrics.activeCount)}
         />
         <StatCard
           label="Ολοκληρωμένες επισκέψεις"
@@ -425,6 +425,14 @@ export default async function DashboardPage({
           value={String(metrics.visitsPlanned)}
         />
         <StatCard label="Στόχος επισκέψεων" value={String(metrics.targetVisits)} />
+        <StatCard
+          label="Χωρίς επίσκεψη (0)"
+          value={String(ratingMetrics.rating0Count)}
+        />
+        <StatCard
+          label="Υπό διερεύνηση (ΥΔ)"
+          value={String(ratingMetrics.pendingCount)}
+        />
       </div>
 
       <Card>
