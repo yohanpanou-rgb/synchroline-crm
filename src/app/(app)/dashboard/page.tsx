@@ -10,6 +10,7 @@ import {
 import {
   getRepRatingMetrics,
   getAllRepsRatingMetrics,
+  getRegionRatingMetrics,
   type RepRatingMetrics,
 } from "@/lib/queries/rating";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -196,6 +197,7 @@ export default async function DashboardPage({
       : null;
     const ratingMetricsRaw = await getAllRepsRatingMetrics(supabase, cycle);
     const ratingMetrics = sortRatingMetrics(ratingMetricsRaw, ratingSortKey);
+    const regionRatingMetrics = await getRegionRatingMetrics(supabase);
     const prescriptionMetrics = await getAllRepsPrescriptionMetrics(supabase);
     const overallSubBrandStats = await getOverallSubBrandStats(supabase);
     const syggrosStats = await getInstitutionVisitStats(supabase, SYGGROS_INSTITUTION, cycle);
@@ -420,6 +422,59 @@ export default async function DashboardPage({
                   </tr>
                 </tfoot>
               )}
+            </table>
+          </div>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Αξιολόγηση Πελατολογίου ανά Περιοχή</CardTitle>
+          </CardHeader>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead>
+                <tr className="border-b border-black/5 text-left text-xs text-ink/50">
+                  <th className="py-2 pr-3 font-medium">Περιοχή</th>
+                  <th className="py-2 pr-3 font-medium">Σύνολο</th>
+                  <th className="py-2 pr-3 font-medium">Ενεργοί %</th>
+                  <th className="py-2 pr-3 font-medium">Χωρίς επίσκεψη %</th>
+                  <th className="py-2 pr-3 font-medium">ΥΔ %</th>
+                  <th className="py-2 pr-3 font-medium">Κατανομή 1/2/3/0/ΥΔ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/5">
+                {regionRatingMetrics.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-4 text-sm text-ink/50">
+                      Δεν υπάρχουν δεδομένα.
+                    </td>
+                  </tr>
+                )}
+                {regionRatingMetrics.map((m) => (
+                  <tr key={m.region}>
+                    <td className="py-2.5 pr-3 font-medium text-ink">{m.region}</td>
+                    <td className="py-2.5 pr-3 tabular-nums text-ink/70">{m.total}</td>
+                    <td className="py-2.5 pr-3 tabular-nums text-ink/70">
+                      {m.activeCount} ({m.activePct.toFixed(0)}%)
+                    </td>
+                    <td className="py-2.5 pr-3 tabular-nums text-ink/70">
+                      {m.rating0Count} ({m.rating0Pct.toFixed(0)}%)
+                    </td>
+                    <td className="py-2.5 pr-3">
+                      <Badge
+                        tone={m.pendingPct > RATING_CPO_ALERT_THRESHOLD_PCT ? "danger" : "neutral"}
+                      >
+                        {m.pendingCount} ({m.pendingPct.toFixed(0)}%)
+                      </Badge>
+                    </td>
+                    <td className="py-2.5 pr-3">
+                      <div className="w-32">
+                        <RatingStackedBar counts={m.ratingCounts} total={m.total} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         </Card>

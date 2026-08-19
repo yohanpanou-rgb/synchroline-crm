@@ -88,3 +88,51 @@ export async function getAllRepsRatingMetrics(
     reps.map((rep) => getRepRatingMetrics(supabase, rep.id, rep.full_name, cycle)),
   );
 }
+
+export interface RegionRatingMetrics {
+  region: string;
+  total: number;
+  ratingCounts: Record<RatingCpo, number>;
+  activeCount: number;
+  activePct: number;
+  rating0Count: number;
+  rating0Pct: number;
+  pendingCount: number;
+  pendingPct: number;
+}
+
+/** Ίδια στατιστικά αξιολόγησης με getAllRepsRatingMetrics, ομαδοποιημένα ανά Περιοχή αντί για rep. */
+export async function getRegionRatingMetrics(supabase: Client): Promise<RegionRatingMetrics[]> {
+  const { data } = await supabase
+    .from("doctors")
+    .select("region, rating_cpo")
+    .eq("status", "active");
+
+  const byRegion = new Map<string, { total: number; ratingCounts: Record<RatingCpo, number> }>();
+  for (const d of data ?? []) {
+    const region = d.region?.trim() || "Χωρίς περιοχή";
+    const entry = byRegion.get(region) ?? { total: 0, ratingCounts: emptyCounts() };
+    entry.total++;
+    entry.ratingCounts[d.rating_cpo]++;
+    byRegion.set(region, entry);
+  }
+
+  return [...byRegion.entries()]
+    .map(([region, { total, ratingCounts }]) => {
+      const activeCount = ACTIVE_RATINGS.reduce((s, r) => s + ratingCounts[r], 0);
+      const rating0Count = ratingCounts["0"];
+      const pendingCount = ratingCounts["ΥΔ"];
+      return {
+        region,
+        total,
+        ratingCounts,
+        activeCount,
+        activePct: total > 0 ? (activeCount / total) * 100 : 0,
+        rating0Count,
+        rating0Pct: total > 0 ? (rating0Count / total) * 100 : 0,
+        pendingCount,
+        pendingPct: total > 0 ? (pendingCount / total) * 100 : 0,
+      };
+    })
+    .sort((a, b) => b.total - a.total);
+}
