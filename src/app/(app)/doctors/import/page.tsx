@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/supabase/profile";
 import { getAssignableReps } from "@/lib/queries/reps";
 import { DoctorImportWizard } from "@/components/doctors/import/DoctorImportWizard";
+import { BackButton } from "@/components/ui/BackButton";
 
 export default async function DoctorsImportPage() {
   const profile = await requireProfile();
@@ -12,6 +13,7 @@ export default async function DoctorsImportPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
+      <BackButton fallbackHref="/doctors" />
       <h1 className="mb-1 text-xl font-semibold text-primary-dark">
         Εισαγωγή γιατρών
       </h1>

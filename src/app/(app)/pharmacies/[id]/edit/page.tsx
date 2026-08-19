@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { Card } from "@/components/ui/Card";
+import { BackButton } from "@/components/ui/BackButton";
 import { PharmacyVisitForm } from "@/components/pharmacies/PharmacyVisitForm";
 import { updatePharmacyVisit } from "../../actions";
 
@@ -40,6 +41,7 @@ export default async function EditPharmacyVisitPage({
 
   return (
     <div className="mx-auto max-w-2xl">
+      <BackButton fallbackHref="/pharmacies" />
       <h1 className="mb-6 text-xl font-semibold text-primary-dark">
         Επεξεργασία επίσκεψης φαρμακείου
       </h1>

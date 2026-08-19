@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { DoctorForm } from "@/components/doctors/DoctorForm";
 import { Card } from "@/components/ui/Card";
+import { BackButton } from "@/components/ui/BackButton";
 import { createDoctor } from "../actions";
 import { getAssignableReps } from "@/lib/queries/reps";
 
@@ -22,6 +23,7 @@ export default async function NewDoctorPage({
 
   return (
     <div className="mx-auto max-w-2xl">
+      <BackButton fallbackHref="/doctors" />
       <h1 className="mb-1 text-xl font-semibold text-primary-dark">
         {manager ? "Νέος γιατρός" : "Πρόταση νέου γιατρού"}
       </h1>

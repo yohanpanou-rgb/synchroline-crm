@@ -5,6 +5,7 @@ import { getAssignableReps } from "@/lib/queries/reps";
 import { getDistinctSalesNomoi } from "@/lib/queries/sales";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { BackButton } from "@/components/ui/BackButton";
 import { setNomosReps } from "../actions";
 
 export default async function SalesTerritoriesPage() {
@@ -26,6 +27,7 @@ export default async function SalesTerritoriesPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
+      <BackButton fallbackHref="/sales" />
       <h1 className="mb-1 text-xl font-semibold text-primary-dark">
         Ανάθεση νομών σε reps
       </h1>

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { getAssignableReps } from "@/lib/queries/reps";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { BackButton } from "@/components/ui/BackButton";
 import { VisitForm } from "@/components/visits/VisitForm";
 import { ActivityHistory } from "@/components/audit/ActivityHistory";
 import { getRecordHistory } from "@/lib/queries/audit";
@@ -45,6 +46,7 @@ export default async function EditVisitPage({
 
   return (
     <div className="mx-auto max-w-2xl">
+      <BackButton fallbackHref="/visits" />
       <h1 className="mb-6 text-xl font-semibold text-primary-dark">
         Επεξεργασία επίσκεψης
       </h1>

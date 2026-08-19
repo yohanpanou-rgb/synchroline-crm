@@ -16,10 +16,15 @@ const RATING_FILTER_TONE: Record<RatingCpo, string> = {
   ΥΔ: "bg-danger text-white",
 };
 
-function filterHref(q: string | undefined, rating: string | undefined) {
+function filterHref(
+  q: string | undefined,
+  rating: string | undefined,
+  region: string | undefined,
+) {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
   if (rating) params.set("rating", rating);
+  if (region) params.set("region", region);
   const qs = params.toString();
   return qs ? `/doctors?${qs}` : "/doctors";
 }
@@ -27,10 +32,10 @@ function filterHref(q: string | undefined, rating: string | undefined) {
 export default async function DoctorsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; rating?: string }>;
+  searchParams: Promise<{ q?: string; rating?: string; region?: string }>;
 }) {
   const profile = await requireProfile();
-  const { q, rating } = await searchParams;
+  const { q, rating, region } = await searchParams;
   const supabase = await createClient();
 
   let query = supabase
@@ -44,8 +49,18 @@ export default async function DoctorsPage({
   if (rating) {
     query = query.eq("rating_cpo", rating as RatingCpo);
   }
+  if (region) {
+    query = query.eq("region", region);
+  }
 
-  const { data: doctors } = await query;
+  const [{ data: doctors }, { data: regionRows }] = await Promise.all([
+    query,
+    supabase.from("doctors").select("region"),
+  ]);
+
+  const regions = [
+    ...new Set((regionRows ?? []).map((r) => r.region).filter((r): r is string => !!r)),
+  ].sort((a, b) => a.localeCompare(b, "el"));
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -53,7 +68,10 @@ export default async function DoctorsPage({
         <h1 className="text-xl font-semibold text-primary-dark">
           Πελατολόγιο
         </h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          <a href="/api/doctors/export">
+            <Button variant="secondary" size="md">Εξαγωγή Excel</Button>
+          </a>
           {profile.role === "admin" && (
             <Link href="/doctors/import">
               <Button variant="secondary" size="md">Εισαγωγή αρχείου</Button>
@@ -65,7 +83,7 @@ export default async function DoctorsPage({
         </div>
       </div>
 
-      <form className="mb-3">
+      <form className="mb-3 flex gap-2">
         {rating && <input type="hidden" name="rating" value={rating} />}
         <Input
           type="search"
@@ -73,11 +91,23 @@ export default async function DoctorsPage({
           defaultValue={q ?? ""}
           placeholder="Αναζήτηση με επώνυμο ή όνομα…"
         />
+        <select
+          name="region"
+          defaultValue={region ?? ""}
+          className="h-11 shrink-0 rounded-xl border border-black/10 bg-white px-3 text-sm text-ink"
+        >
+          <option value="">Όλες οι περιοχές</option>
+          {regions.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
       </form>
 
       <div className="mb-5 flex flex-wrap gap-2">
         <Link
-          href={filterHref(q, undefined)}
+          href={filterHref(q, undefined, region)}
           className={cn(
             "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
             !rating ? "bg-primary-dark text-white" : "bg-ink/5 text-ink/60 hover:bg-ink/10",
@@ -88,7 +118,7 @@ export default async function DoctorsPage({
         {RATING_CPO_OPTIONS.map((opt) => (
           <Link
             key={opt.value}
-            href={filterHref(q, opt.value)}
+            href={filterHref(q, opt.value, region)}
             title={opt.description}
             className={cn(
               "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",

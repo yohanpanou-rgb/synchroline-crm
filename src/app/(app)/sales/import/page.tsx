@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/supabase/profile";
 import { SalesImportWizard } from "@/components/sales/SalesImportWizard";
+import { BackButton } from "@/components/ui/BackButton";
 
 export default async function SalesImportPage() {
   const profile = await requireProfile();
@@ -8,6 +9,7 @@ export default async function SalesImportPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
+      <BackButton fallbackHref="/sales" />
       <h1 className="mb-1 text-xl font-semibold text-primary-dark">
         Εισαγωγή πωλήσεων
       </h1>

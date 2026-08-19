@@ -3,6 +3,7 @@ import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { getActiveCycle } from "@/lib/queries/dashboard";
 import { getAssignableReps } from "@/lib/queries/reps";
 import { Card } from "@/components/ui/Card";
+import { BackButton } from "@/components/ui/BackButton";
 import { VisitForm } from "@/components/visits/VisitForm";
 import { createVisit } from "../actions";
 
@@ -34,6 +35,7 @@ export default async function NewVisitPage({
 
   return (
     <div className="mx-auto max-w-2xl">
+      <BackButton fallbackHref="/visits" />
       <h1 className="mb-6 text-xl font-semibold text-primary-dark">
         Νέα επίσκεψη
       </h1>

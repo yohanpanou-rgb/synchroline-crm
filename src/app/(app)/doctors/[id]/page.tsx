@@ -10,6 +10,7 @@ import { getRecordHistory } from "@/lib/queries/audit";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { BackButton } from "@/components/ui/BackButton";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
 import { formatDateGR } from "@/lib/constants/schedule";
 import { updateDoctor } from "../actions";
@@ -66,6 +67,7 @@ export default async function DoctorDetailPage({
 
   return (
     <div className="mx-auto max-w-2xl">
+      <BackButton fallbackHref="/doctors" />
       <div className="mb-5 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-primary-dark">
