@@ -17,10 +17,17 @@ import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PacingBar } from "@/components/dashboard/PacingBar";
 import { RatingStackedBar } from "@/components/dashboard/RatingStackedBar";
+import { TrendChart } from "@/components/dashboard/TrendChart";
+import { RegionBreakdownList } from "@/components/dashboard/RegionBreakdownList";
+import { Button } from "@/components/ui/Button";
 import {
   getWeekPharmacyVisitCount,
   getAllRepsPharmacyMetrics,
+  getCyclePharmacyVisitCount,
+  getAllRepsCyclePharmacyMetrics,
 } from "@/lib/queries/pharmacies";
+import { getVisitTrend, getRegionBreakdown } from "@/lib/queries/trends";
+import { computePacing } from "@/lib/utils/pacing";
 import { getAssignableReps } from "@/lib/queries/reps";
 import { WEEKLY_PHARMACY_VISIT_TARGET } from "@/lib/constants/schedule";
 import { RATING_CPO_ALERT_THRESHOLD_PCT } from "@/lib/constants/rating";
@@ -130,6 +137,22 @@ export default async function DashboardPage({
         : 0;
     const reps = await getAssignableReps(supabase);
     const pharmacyMetrics = await getAllRepsPharmacyMetrics(supabase, reps);
+    const pharmacyCycleMetrics = cycle
+      ? await getAllRepsCyclePharmacyMetrics(supabase, reps, cycle)
+      : [];
+    const visitTrend = await getVisitTrend(supabase, cycle);
+    const regionBreakdown = await getRegionBreakdown(supabase, cycle);
+    const teamPacing = cycle
+      ? computePacing({
+          cycleStartDate: cycle.start_date,
+          cycleEndDate: cycle.end_date,
+          actualCoveragePct: avgCoverage,
+          targetCoveragePct:
+            repsMetrics.length > 0
+              ? repsMetrics.reduce((s, r) => s + r.targetCoveragePct, 0) / repsMetrics.length
+              : 0,
+        })
+      : null;
     const ratingMetricsRaw = await getAllRepsRatingMetrics(supabase, cycle);
     const ratingMetrics = sortRatingMetrics(ratingMetricsRaw, ratingSortKey);
     const ratingTotals = ratingMetricsRaw.reduce(
@@ -154,9 +177,14 @@ export default async function DashboardPage({
 
     return (
       <div className="mx-auto max-w-4xl">
-        <h1 className="mb-1 text-xl font-semibold text-primary-dark">
-          Dashboard — Ομάδα
-        </h1>
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold text-primary-dark">
+            Dashboard — Ομάδα
+          </h1>
+          <Link href="/doctors/new">
+            <Button size="md">+ Νέος γιατρός</Button>
+          </Link>
+        </div>
         <p className="mb-6 text-sm text-ink/50">
           {cycle ? cycle.name : "Δεν υπάρχει ενεργός κύκλος"}
         </p>
@@ -168,6 +196,37 @@ export default async function DashboardPage({
             value={String(totalVisits)}
           />
           <StatCard label="Μ.Ο. κάλυψης" value={`${avgCoverage.toFixed(0)}%`} />
+        </div>
+
+        {teamPacing && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Pacing κύκλου — Ομάδα</CardTitle>
+            </CardHeader>
+            <PacingBar
+              label="Μ.Ο. κάλυψη ομάδας"
+              subtitle={`${avgCoverage.toFixed(0)}% κάλυψη στο ${teamPacing.cycleProgressPct.toFixed(0)}% του χρόνου του κύκλου`}
+              cycleStartDate={cycle!.start_date}
+              cycleEndDate={cycle!.end_date}
+              actualCoveragePct={avgCoverage}
+              targetCoveragePct={teamPacing.targetCoveragePct}
+            />
+          </Card>
+        )}
+
+        <div className="mb-6 grid gap-6 sm:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Τάση επισκέψεων</CardTitle>
+            </CardHeader>
+            <TrendChart buckets={visitTrend} />
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Γεωγραφική κατανομή</CardTitle>
+            </CardHeader>
+            <RegionBreakdownList regions={regionBreakdown} />
+          </Card>
         </div>
 
         <Card>
@@ -185,31 +244,37 @@ export default async function DashboardPage({
         </Card>
 
         <Card className="mt-6">
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle>
               Φαρμακεία — εβδομαδιαία πρόοδος (στόχος {WEEKLY_PHARMACY_VISIT_TARGET}/rep)
             </CardTitle>
+            <Link href="/pharmacies" className="text-xs font-medium text-primary hover:underline">
+              Ιστορικό
+            </Link>
           </CardHeader>
           <div className="space-y-3">
             {pharmacyMetrics.length === 0 && (
               <p className="py-4 text-sm text-ink/50">Δεν υπάρχουν reps.</p>
             )}
-            {pharmacyMetrics.map((m) => (
-              <div key={m.repId}>
-                <div className="mb-1 flex justify-between text-xs">
-                  <span className="font-medium text-ink">{m.repName}</span>
-                  <span className="tabular-nums text-ink/50">
-                    {m.count}/{WEEKLY_PHARMACY_VISIT_TARGET}
-                  </span>
+            {pharmacyMetrics.map((m) => {
+              const cycleCount = pharmacyCycleMetrics.find((c) => c.repId === m.repId)?.count ?? 0;
+              return (
+                <div key={m.repId}>
+                  <div className="mb-1 flex justify-between text-xs">
+                    <span className="font-medium text-ink">{m.repName}</span>
+                    <span className="tabular-nums text-ink/50">
+                      {m.count}/{WEEKLY_PHARMACY_VISIT_TARGET} εβδομάδα · {cycleCount} στον κύκλο
+                    </span>
+                  </div>
+                  <ProgressBar
+                    value={(m.count / WEEKLY_PHARMACY_VISIT_TARGET) * 100}
+                    colorClassName={
+                      m.count >= WEEKLY_PHARMACY_VISIT_TARGET ? "bg-success" : "bg-primary"
+                    }
+                  />
                 </div>
-                <ProgressBar
-                  value={(m.count / WEEKLY_PHARMACY_VISIT_TARGET) * 100}
-                  colorClassName={
-                    m.count >= WEEKLY_PHARMACY_VISIT_TARGET ? "bg-success" : "bg-primary"
-                  }
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
 
@@ -326,12 +391,22 @@ export default async function DashboardPage({
     cycle,
   );
   const pharmacyCount = await getWeekPharmacyVisitCount(supabase, profile.id);
+  const pharmacyCycleCount = cycle
+    ? await getCyclePharmacyVisitCount(supabase, profile.id, cycle)
+    : 0;
+  const visitTrend = await getVisitTrend(supabase, cycle, profile.id);
+  const regionBreakdown = await getRegionBreakdown(supabase, cycle, profile.id);
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="mb-1 text-xl font-semibold text-primary-dark">
-        Καλησπέρα, {profile.full_name.split(" ")[0]}
-      </h1>
+      <div className="mb-1 flex items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold text-primary-dark">
+          Καλησπέρα, {profile.full_name.split(" ")[0]}
+        </h1>
+        <Link href="/doctors/new">
+          <Button size="md">+ Νέος γιατρός</Button>
+        </Link>
+      </div>
       <p className="mb-6 text-sm text-ink/50">
         {cycle ? cycle.name : "Δεν υπάρχει ενεργός κύκλος"}
       </p>
@@ -371,6 +446,21 @@ export default async function DashboardPage({
           </p>
         )}
       </Card>
+
+      <div className="mt-6 grid gap-6 sm:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Τάση επισκέψεων</CardTitle>
+          </CardHeader>
+          <TrendChart buckets={visitTrend} />
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Γεωγραφική κατανομή</CardTitle>
+          </CardHeader>
+          <RegionBreakdownList regions={regionBreakdown} />
+        </Card>
+      </div>
 
       <Card className="mt-6">
         <CardHeader>
@@ -433,11 +523,14 @@ export default async function DashboardPage({
       </Card>
 
       <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Φαρμακεία — αυτή την εβδομάδα</CardTitle>
+        <CardHeader className="flex items-center justify-between">
+          <CardTitle>Φαρμακεία</CardTitle>
+          <Link href="/pharmacies" className="text-xs font-medium text-primary hover:underline">
+            Ιστορικό
+          </Link>
         </CardHeader>
         <div className="mb-1.5 flex justify-between text-xs">
-          <span className="text-ink/50">Πρόοδος</span>
+          <span className="text-ink/50">Αυτή την εβδομάδα</span>
           <span className="tabular-nums font-medium text-ink">
             {pharmacyCount}/{WEEKLY_PHARMACY_VISIT_TARGET}
           </span>
@@ -448,6 +541,11 @@ export default async function DashboardPage({
             pharmacyCount >= WEEKLY_PHARMACY_VISIT_TARGET ? "bg-success" : "bg-primary"
           }
         />
+        {cycle && (
+          <p className="mt-2 text-xs text-ink/50">
+            {pharmacyCycleCount} επισκέψεις στον κύκλο «{cycle.name}»
+          </p>
+        )}
       </Card>
     </div>
   );
