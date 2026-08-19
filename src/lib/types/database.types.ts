@@ -479,6 +479,60 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      sales_records: {
+        Row: {
+          id: string;
+          sale_date: string;
+          sub_brand: string;
+          nomos: string;
+          delivery_nomos: string | null;
+          product_code: string;
+          product_description: string | null;
+          customer_code: string | null;
+          customer_name: string | null;
+          quantity: number;
+          net_value: number;
+          is_sample: boolean;
+          created_at: string;
+        };
+        Insert: {
+          sale_date: string;
+          sub_brand: string;
+          nomos: string;
+          delivery_nomos?: string | null;
+          product_code: string;
+          product_description?: string | null;
+          customer_code?: string | null;
+          customer_name?: string | null;
+          quantity?: number;
+          net_value?: number;
+          is_sample?: boolean;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      sales_territory_reps: {
+        Row: {
+          id: string;
+          nomos: string;
+          rep_id: string;
+          created_at: string;
+        };
+        Insert: {
+          nomos: string;
+          rep_id: string;
+        };
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "sales_territory_reps_rep_id_fkey";
+            columns: ["rep_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
