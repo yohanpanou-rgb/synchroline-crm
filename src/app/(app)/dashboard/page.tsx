@@ -33,7 +33,42 @@ import {
   getOverallSubBrandStats,
 } from "@/lib/queries/prescriptions";
 import { SubBrandBarChart } from "@/components/dashboard/SubBrandBarChart";
+import { getInstitutionVisitStats } from "@/lib/queries/institutions";
 import { computePacing } from "@/lib/utils/pacing";
+
+const SYGGROS_INSTITUTION = "ΣΥΓΓΡΟΣ";
+
+function SyggrosReportCard({
+  stats,
+  cycleName,
+}: {
+  stats: Awaited<ReturnType<typeof getInstitutionVisitStats>>;
+  cycleName: string | undefined;
+}) {
+  return (
+    <Card className="mt-6">
+      <CardHeader className="flex items-center justify-between">
+        <CardTitle>Σύγγρος{cycleName ? ` — ${cycleName}` : ""}</CardTitle>
+        <Link href="/hospitals" className="text-xs font-medium text-primary hover:underline">
+          Λίστα γιατρών
+        </Link>
+      </CardHeader>
+      <p className="mb-2 text-sm text-ink">
+        {stats.visitsThisCycle} επισκέψεις σε {stats.doctorCount} γιατρούς
+      </p>
+      {stats.byRep.length > 0 && (
+        <div className="space-y-1">
+          {stats.byRep.map((r) => (
+            <div key={r.repId} className="flex justify-between text-xs text-ink/60">
+              <span>{r.repName}</span>
+              <span className="tabular-nums">{r.count}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
 import { getAssignableReps } from "@/lib/queries/reps";
 import { WEEKLY_PHARMACY_VISIT_TARGET } from "@/lib/constants/schedule";
 import { RATING_CPO_ALERT_THRESHOLD_PCT } from "@/lib/constants/rating";
@@ -163,6 +198,7 @@ export default async function DashboardPage({
     const ratingMetrics = sortRatingMetrics(ratingMetricsRaw, ratingSortKey);
     const prescriptionMetrics = await getAllRepsPrescriptionMetrics(supabase);
     const overallSubBrandStats = await getOverallSubBrandStats(supabase);
+    const syggrosStats = await getInstitutionVisitStats(supabase, SYGGROS_INSTITUTION, cycle);
     const ratingTotals = ratingMetricsRaw.reduce(
       (acc, r) => {
         acc.total += r.total;
@@ -432,6 +468,8 @@ export default async function DashboardPage({
             </table>
           </div>
         </Card>
+
+        <SyggrosReportCard stats={syggrosStats} cycleName={cycle?.name} />
       </div>
     );
   }
@@ -450,6 +488,7 @@ export default async function DashboardPage({
   const visitTrend = await getVisitTrend(supabase, cycle, profile.id);
   const regionBreakdown = await getRegionBreakdown(supabase, cycle, profile.id);
   const prescriptionMetrics = await getRepPrescriptionMetrics(supabase, profile.id, profile.full_name);
+  const syggrosStats = await getInstitutionVisitStats(supabase, SYGGROS_INSTITUTION, cycle);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -620,6 +659,8 @@ export default async function DashboardPage({
           </p>
         )}
       </Card>
+
+      <SyggrosReportCard stats={syggrosStats} cycleName={cycle?.name} />
     </div>
   );
 }

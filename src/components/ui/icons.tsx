@@ -84,6 +84,16 @@ export function LogoutIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function InstitutionIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="4" y="9" width="16" height="12" rx="1.5" />
+      <path d="M9 21v-6h6v6" />
+      <path d="M12 3l8 6H4l8-6z" />
+    </Icon>
+  );
+}
+
 export function ArrowLeftIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

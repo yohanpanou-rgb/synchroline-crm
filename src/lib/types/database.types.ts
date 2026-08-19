@@ -5,7 +5,8 @@
 export type UserRole = "rep" | "manager" | "admin";
 export type DoctorStatus = "active" | "pending_approval" | "archived";
 export type DynamicCategory = "Α" | "Β" | "Γ";
-export type PriorityColor = "green" | "orange" | "red";
+/** Αριθμητική κλίμακα (1,2,3,...), ανοιχτή — χωρίς CHECK constraint στη βάση. */
+export type PriorityColor = string;
 export type VisitType = "normal" | "joint";
 export type VisitStatus = "planned" | "completed" | "cancelled";
 export type ProductName = "aknicare" | "closebax" | "terproline" | "rosacure";
@@ -26,6 +27,7 @@ export interface Database {
           full_name: string;
           role: UserRole;
           is_active: boolean;
+          can_visit_syggros: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -35,12 +37,14 @@ export interface Database {
           full_name: string;
           role?: UserRole;
           is_active?: boolean;
+          can_visit_syggros?: boolean;
         };
         Update: Partial<{
           email: string;
           full_name: string;
           role: UserRole;
           is_active: boolean;
+          can_visit_syggros: boolean;
         }>;
         Relationships: [];
       };
@@ -97,6 +101,7 @@ export interface Database {
           notes: string | null;
           hq_type: HqType | null;
           rating_cpo: RatingCpo;
+          institution: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -128,6 +133,7 @@ export interface Database {
           notes: string | null;
           hq_type: HqType | null;
           rating_cpo: RatingCpo;
+          institution: string | null;
         }> & {
           last_name: string;
           first_name: string;
@@ -162,6 +168,7 @@ export interface Database {
           notes: string | null;
           hq_type: HqType | null;
           rating_cpo: RatingCpo;
+          institution: string | null;
         }>;
         Relationships: [
           {

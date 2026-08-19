@@ -14,18 +14,6 @@ const RATING_TONE: Record<RatingCpo, "success" | "warning" | "danger" | "neutral
   ΥΔ: "danger",
 };
 
-const PRIORITY_TONE = {
-  green: "success",
-  orange: "warning",
-  red: "danger",
-} as const;
-
-const PRIORITY_LABEL = {
-  green: "Πράσινο",
-  orange: "Πορτοκαλί",
-  red: "Κόκκινο",
-} as const;
-
 const STATUS_LABEL = {
   active: "Ενεργός",
   pending_approval: "Εκκρεμεί έγκριση",
@@ -51,9 +39,7 @@ export function DoctorCard({ doctor }: { doctor: Doctor }) {
           {RATING_CPO_LABEL[doctor.rating_cpo]}
         </Badge>
         {doctor.priority_color && (
-          <Badge tone={PRIORITY_TONE[doctor.priority_color]}>
-            {PRIORITY_LABEL[doctor.priority_color]}
-          </Badge>
+          <Badge tone="neutral">Προτεραιότητα {doctor.priority_color}</Badge>
         )}
         {doctor.status !== "active" && (
           <Badge tone="neutral">{STATUS_LABEL[doctor.status]}</Badge>

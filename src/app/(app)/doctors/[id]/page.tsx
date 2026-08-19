@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { DoctorForm } from "@/components/doctors/DoctorForm";
-import { DoctorDetailView } from "@/components/doctors/DoctorDetailView";
 import { RatingCpoControl } from "@/components/doctors/RatingCpoControl";
 import { DoctorPharmaciesBlock } from "@/components/doctors/DoctorPharmaciesBlock";
 import { ActivityHistory } from "@/components/audit/ActivityHistory";
@@ -102,17 +101,13 @@ export default async function DoctorDetailPage({
       </Card>
 
       <Card className="mb-4">
-        {manager ? (
-          <DoctorForm
-            action={updateDoctor.bind(null, doctor.id)}
-            isManager
-            doctor={doctor}
-            reps={reps}
-            submitLabel="Αποθήκευση"
-          />
-        ) : (
-          <DoctorDetailView doctor={doctor} />
-        )}
+        <DoctorForm
+          action={updateDoctor.bind(null, doctor.id)}
+          isManager={manager}
+          doctor={doctor}
+          reps={reps}
+          submitLabel="Αποθήκευση"
+        />
       </Card>
 
       <Card>

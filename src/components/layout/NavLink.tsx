@@ -11,6 +11,7 @@ import {
   CalendarIcon,
   PharmacyIcon,
   CyclesIcon,
+  InstitutionIcon,
 } from "@/components/ui/icons";
 
 // Icon components can't cross the server -> client boundary as props, so the
@@ -21,6 +22,7 @@ const ICONS_BY_HREF: Record<string, typeof DashboardIcon> = {
   "/visits": VisitsIcon,
   "/visits/calendar": CalendarIcon,
   "/pharmacies": PharmacyIcon,
+  "/hospitals": InstitutionIcon,
   "/cycles": CyclesIcon,
 };
 

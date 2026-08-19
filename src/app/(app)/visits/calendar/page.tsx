@@ -19,6 +19,7 @@ import {
 import { formatDoctorName } from "@/lib/utils/name-normalization";
 import { Button } from "@/components/ui/Button";
 import { DoctorHoverCard } from "@/components/visits/DoctorHoverCard";
+import { DraggableVisit, DroppableSlot } from "@/components/visits/CalendarDnD";
 import { cn } from "@/lib/utils/cn";
 
 type ViewMode = "day" | "week" | "month";
@@ -211,21 +212,25 @@ async function WeekView({ supabase, anchor, repId, manager, repParam }: ViewProp
                   const cellVisits = bySlot.get(`${toISODate(d)}_${time}`) ?? [];
                   return (
                     <td key={i} className="border-b border-l border-black/5 p-0 align-top">
-                      {cellVisits.length === 0 ? (
-                        <Link
-                          href={`/visits/new?date=${toISODate(d)}&time=${time}`}
-                          title="Νέα επίσκεψη"
-                          className="flex min-h-11 w-full items-center justify-center text-ink/20 transition-colors hover:bg-primary/5 hover:text-primary"
-                        >
-                          <span className="text-lg leading-none">+</span>
-                        </Link>
-                      ) : (
-                        <div className="space-y-1 p-1">
-                          {cellVisits.map((v) => (
-                            <VisitChip key={v.id} visit={v} manager={manager} />
-                          ))}
-                        </div>
-                      )}
+                      <DroppableSlot date={toISODate(d)} time={time} className="min-h-11">
+                        {cellVisits.length === 0 ? (
+                          <Link
+                            href={`/visits/new?date=${toISODate(d)}&time=${time}`}
+                            title="Νέα επίσκεψη"
+                            className="flex min-h-11 w-full items-center justify-center text-ink/20 transition-colors hover:bg-primary/5 hover:text-primary"
+                          >
+                            <span className="text-lg leading-none">+</span>
+                          </Link>
+                        ) : (
+                          <div className="space-y-1 p-1">
+                            {cellVisits.map((v) => (
+                              <DraggableVisit key={v.id} visitId={v.id}>
+                                <VisitChip visit={v} manager={manager} />
+                              </DraggableVisit>
+                            ))}
+                          </div>
+                        )}
+                      </DroppableSlot>
                     </td>
                   );
                 })}
@@ -287,21 +292,25 @@ async function DayView({ supabase, anchor, repId, manager, repParam }: ViewProps
                       {time}
                     </td>
                     <td className="border-b border-l border-black/5 p-0 align-top">
-                      {cellVisits.length === 0 ? (
-                        <Link
-                          href={`/visits/new?date=${dayISO}&time=${time}`}
-                          title="Νέα επίσκεψη"
-                          className="flex min-h-11 w-full items-center px-3 text-ink/20 transition-colors hover:bg-primary/5 hover:text-primary"
-                        >
-                          <span className="text-lg leading-none">+</span>
-                        </Link>
-                      ) : (
-                        <div className="space-y-1 p-1">
-                          {cellVisits.map((v) => (
-                            <VisitChip key={v.id} visit={v} manager={manager} />
-                          ))}
-                        </div>
-                      )}
+                      <DroppableSlot date={dayISO} time={time} className="min-h-11">
+                        {cellVisits.length === 0 ? (
+                          <Link
+                            href={`/visits/new?date=${dayISO}&time=${time}`}
+                            title="Νέα επίσκεψη"
+                            className="flex min-h-11 w-full items-center px-3 text-ink/20 transition-colors hover:bg-primary/5 hover:text-primary"
+                          >
+                            <span className="text-lg leading-none">+</span>
+                          </Link>
+                        ) : (
+                          <div className="space-y-1 p-1">
+                            {cellVisits.map((v) => (
+                              <DraggableVisit key={v.id} visitId={v.id}>
+                                <VisitChip visit={v} manager={manager} />
+                              </DraggableVisit>
+                            ))}
+                          </div>
+                        )}
+                      </DroppableSlot>
                     </td>
                   </tr>
                 );
@@ -374,50 +383,56 @@ async function MonthView({ supabase, anchor, repId, manager, repParam }: ViewPro
                     <td
                       key={di}
                       className={cn(
-                        "h-24 min-w-[90px] border-b border-l border-black/5 p-1.5 align-top",
+                        "h-24 min-w-[90px] border-b border-l border-black/5 p-0 align-top",
                         !inMonth && "bg-black/[0.02]",
                       )}
                     >
-                      <Link
-                        href={
-                          isWeekend
-                            ? "#"
-                            : `/visits/calendar?view=day&date=${toISODate(d)}${repParam}`
-                        }
-                        className={cn(
-                          "text-xs tabular-nums",
-                          inMonth ? "text-ink/70" : "text-ink/30",
-                          isWeekend && "pointer-events-none",
-                        )}
+                      <DroppableSlot
+                        date={toISODate(d)}
+                        className={cn("h-full p-1.5", isWeekend && "pointer-events-none")}
                       >
-                        {d.getDate()}
-                      </Link>
-                      {dayVisits.length > 0 && (
-                        <div className="mt-1 space-y-0.5">
-                          {dayVisits.slice(0, 2).map((v) => (
-                            <DoctorHoverCard
-                              key={v.id}
-                              doctorId={v.doctor_id}
-                              href={`/visits/${v.id}/edit`}
-                              className={cn(
-                                "block truncate rounded px-1 py-0.5 text-[10px] leading-tight",
-                                v.status === "completed"
-                                  ? "bg-success/15 text-success"
-                                  : "bg-primary/10 text-primary-dark",
-                              )}
-                            >
-                              {v.doctor
-                                ? formatDoctorName(v.doctor.last_name, v.doctor.first_name)
-                                : "—"}
-                            </DoctorHoverCard>
-                          ))}
-                          {dayVisits.length > 2 && (
-                            <p className="px-1 text-[10px] text-ink/40">
-                              +{dayVisits.length - 2} ακόμα
-                            </p>
+                        <Link
+                          href={
+                            isWeekend
+                              ? "#"
+                              : `/visits/calendar?view=day&date=${toISODate(d)}${repParam}`
+                          }
+                          className={cn(
+                            "text-xs tabular-nums",
+                            inMonth ? "text-ink/70" : "text-ink/30",
+                            isWeekend && "pointer-events-none",
                           )}
-                        </div>
-                      )}
+                        >
+                          {d.getDate()}
+                        </Link>
+                        {dayVisits.length > 0 && (
+                          <div className="mt-1 space-y-0.5">
+                            {dayVisits.slice(0, 2).map((v) => (
+                              <DraggableVisit key={v.id} visitId={v.id}>
+                                <DoctorHoverCard
+                                  doctorId={v.doctor_id}
+                                  href={`/visits/${v.id}/edit`}
+                                  className={cn(
+                                    "block truncate rounded px-1 py-0.5 text-[10px] leading-tight",
+                                    v.status === "completed"
+                                      ? "bg-success/15 text-success"
+                                      : "bg-primary/10 text-primary-dark",
+                                  )}
+                                >
+                                  {v.doctor
+                                    ? formatDoctorName(v.doctor.last_name, v.doctor.first_name)
+                                    : "—"}
+                                </DoctorHoverCard>
+                              </DraggableVisit>
+                            ))}
+                            {dayVisits.length > 2 && (
+                              <p className="px-1 text-[10px] text-ink/40">
+                                +{dayVisits.length - 2} ακόμα
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </DroppableSlot>
                     </td>
                   );
                 })}

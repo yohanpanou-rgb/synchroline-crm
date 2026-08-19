@@ -103,9 +103,9 @@ export function DoctorForm({
             defaultValue={doctor?.priority_color ?? ""}
           >
             <option value="">—</option>
-            <option value="green">Πράσινο</option>
-            <option value="orange">Πορτοκαλί</option>
-            <option value="red">Κόκκινο</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
           </Select>
         </Field>
 

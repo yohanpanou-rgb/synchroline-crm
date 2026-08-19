@@ -120,6 +120,33 @@ export async function updateVisit(visitId: string, formData: FormData) {
   redirect("/visits");
 }
 
+/**
+ * Καλείται από drag-and-drop στο ημερολόγιο. Επιστρέφει { error } αντί για
+ * redirect (client component, όχι <form>). Η πρόσβαση (rep μόνο στις δικές
+ * του επισκέψεις, manager/admin παντού) καλύπτεται ήδη από την υπάρχουσα
+ * "visits_write_own_or_manager" RLS policy — δεν αλλάζει το rep_id εδώ.
+ */
+export async function rescheduleVisit(
+  visitId: string,
+  date: string,
+  time: string | null,
+): Promise<{ error?: string }> {
+  await requireProfile();
+  const supabase = await createClient();
+
+  const update: { scheduled_date: string; scheduled_time?: string | null } = {
+    scheduled_date: date,
+  };
+  if (time) update.scheduled_time = time;
+
+  const { error } = await supabase.from("visits").update(update).eq("id", visitId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/visits");
+  revalidatePath("/visits/calendar");
+  return {};
+}
+
 export async function cancelVisit(visitId: string) {
   await requireProfile();
   const supabase = await createClient();

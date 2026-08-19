@@ -125,23 +125,30 @@ export async function createDoctor(formData: FormData) {
   redirect(`/doctors/${doctor.id}`);
 }
 
+/**
+ * Reps μπορούν πλέον να επεξεργαστούν τα βασικά στοιχεία των δικών τους
+ * γιατρών (περιοχή, στοιχεία επικοινωνίας, προτεραιότητα, συνταγογράφηση
+ * κλπ) — μόνο manager/admin αλλάζουν brick/ανάθεση rep/κατάσταση (DoctorForm
+ * δεν εμφανίζει καν αυτά τα πεδία σε μη-manager). Η πραγματική προστασία
+ * ΠΟΙΕΣ στήλες όντως αλλάζουν για ρόλο 'rep' γίνεται στη βάση (trigger,
+ * migration 0019) — ό,τι στέλνει η φόρμα εδώ για μη-επιτρεπτά πεδία
+ * αγνοείται εκεί σιωπηλά, οπότε δεν χρειάζεται διπλός έλεγχος εδώ.
+ */
 export async function updateDoctor(doctorId: string, formData: FormData) {
   const profile = await requireProfile();
-  if (!isManagerOrAdmin(profile.role)) {
-    redirect(`/doctors/${doctorId}?error=${encodeURIComponent("Μη επιτρεπτή ενέργεια")}`);
-  }
+  const manager = isManagerOrAdmin(profile.role);
   const supabase = await createClient();
 
   const fullNameRaw = str(formData, "full_name_raw") ?? "";
   const { lastName, firstName } = normalizeDoctorName(fullNameRaw);
 
-  const brickCode = str(formData, "brick_code");
-  const brickName = str(formData, "brick_name");
-  if (brickCode) {
+  const brickCode = manager ? str(formData, "brick_code") : undefined;
+  const brickName = manager ? str(formData, "brick_name") : undefined;
+  if (manager && brickCode) {
     await supabase.from("bricks").upsert({ code: brickCode, name: brickName });
   }
 
-  const currentRepId = str(formData, "current_rep_id");
+  const currentRepId = manager ? str(formData, "current_rep_id") : undefined;
 
   const { error } = await supabase
     .from("doctors")
@@ -151,7 +158,6 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
       first_name: firstName,
       region: str(formData, "region"),
       county: str(formData, "county"),
-      brick_code: brickCode,
       dynamic_category: str(formData, "dynamic_category") as DynamicCategory | null,
       priority_color: str(formData, "priority_color") as PriorityColor | null,
       pharmacy_1: str(formData, "pharmacy_1"),
@@ -160,14 +166,19 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
       weekly_rx_closebax: num(formData, "weekly_rx_closebax"),
       weekly_rx_terproline: str(formData, "weekly_rx_terproline"),
       weekly_rx_rosacure: num(formData, "weekly_rx_rosacure"),
-      current_rep_id: currentRepId,
-      status: (str(formData, "status") as DoctorStatus) ?? "active",
       specialty: str(formData, "specialty"),
       phone_1: str(formData, "phone_1"),
       phone_2: str(formData, "phone_2"),
       address: str(formData, "address"),
       notes: str(formData, "notes"),
       hq_type: str(formData, "hq_type") as HqType | null,
+      ...(manager
+        ? {
+            brick_code: brickCode ?? null,
+            current_rep_id: currentRepId ?? null,
+            status: (str(formData, "status") as DoctorStatus) ?? "active",
+          }
+        : {}),
     })
     .eq("id", doctorId);
 
@@ -175,7 +186,9 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
     redirect(`/doctors/${doctorId}?error=${encodeURIComponent(error.message)}`);
   }
 
-  await syncTerritoryAssignment(supabase, doctorId, currentRepId, profile.id);
+  if (manager) {
+    await syncTerritoryAssignment(supabase, doctorId, currentRepId ?? null, profile.id);
+  }
 
   revalidatePath("/doctors");
   revalidatePath(`/doctors/${doctorId}`);
