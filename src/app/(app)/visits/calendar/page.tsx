@@ -35,25 +35,21 @@ function groupBySlot(visits: CalendarVisit[]) {
   return map;
 }
 
-function VisitChip({ visit, manager }: { visit: CalendarVisit; manager: boolean }) {
+function VisitChip({ visit }: { visit: CalendarVisit }) {
   const completed = visit.status === "completed";
   return (
     <DoctorHoverCard
       doctorId={visit.doctor_id}
       href={`/visits/${visit.id}/edit`}
       className={cn(
-        "block rounded-lg px-2 py-1 text-xs leading-tight hover:opacity-80",
+        "block truncate rounded-md px-1.5 py-0.5 text-[11px] leading-tight hover:opacity-80",
         completed ? "bg-success/15 text-success" : "bg-primary/10 text-primary-dark",
       )}
     >
-      <p className="font-medium">
+      <p className="truncate font-medium">
         {visit.doctor
           ? formatDoctorName(visit.doctor.last_name, visit.doctor.first_name)
           : "—"}
-      </p>
-      <p className="text-ink/50">
-        {[visit.doctor?.region, visit.doctor?.county].filter(Boolean).join(" · ") || "—"}
-        {manager && visit.rep ? ` · ${visit.rep.full_name}` : ""}
       </p>
     </DoctorHoverCard>
   );
@@ -225,7 +221,7 @@ async function WeekView({ supabase, anchor, repId, manager, repParam }: ViewProp
                           <div className="space-y-1 p-1">
                             {cellVisits.map((v) => (
                               <DraggableVisit key={v.id} visitId={v.id}>
-                                <VisitChip visit={v} manager={manager} />
+                                <VisitChip visit={v} />
                               </DraggableVisit>
                             ))}
                           </div>
@@ -305,7 +301,7 @@ async function DayView({ supabase, anchor, repId, manager, repParam }: ViewProps
                           <div className="space-y-1 p-1">
                             {cellVisits.map((v) => (
                               <DraggableVisit key={v.id} visitId={v.id}>
-                                <VisitChip visit={v} manager={manager} />
+                                <VisitChip visit={v} />
                               </DraggableVisit>
                             ))}
                           </div>
