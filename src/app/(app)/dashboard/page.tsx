@@ -27,6 +27,12 @@ import {
   getAllRepsCyclePharmacyMetrics,
 } from "@/lib/queries/pharmacies";
 import { getVisitTrend, getRegionBreakdown } from "@/lib/queries/trends";
+import {
+  getRepPrescriptionMetrics,
+  getAllRepsPrescriptionMetrics,
+  getOverallSubBrandStats,
+} from "@/lib/queries/prescriptions";
+import { SubBrandBarChart } from "@/components/dashboard/SubBrandBarChart";
 import { computePacing } from "@/lib/utils/pacing";
 import { getAssignableReps } from "@/lib/queries/reps";
 import { WEEKLY_PHARMACY_VISIT_TARGET } from "@/lib/constants/schedule";
@@ -155,6 +161,8 @@ export default async function DashboardPage({
       : null;
     const ratingMetricsRaw = await getAllRepsRatingMetrics(supabase, cycle);
     const ratingMetrics = sortRatingMetrics(ratingMetricsRaw, ratingSortKey);
+    const prescriptionMetrics = await getAllRepsPrescriptionMetrics(supabase);
+    const overallSubBrandStats = await getOverallSubBrandStats(supabase);
     const ratingTotals = ratingMetricsRaw.reduce(
       (acc, r) => {
         acc.total += r.total;
@@ -379,6 +387,51 @@ export default async function DashboardPage({
             </table>
           </div>
         </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Συνταγογράφηση ανά Sub-brand</CardTitle>
+          </CardHeader>
+          <p className="mb-3 text-xs text-ink/50">Σύγκριση μέσου όρου/εβδομάδα (όλοι οι reps)</p>
+          <SubBrandBarChart stats={overallSubBrandStats} />
+
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead>
+                <tr className="border-b border-black/5 text-left text-xs text-ink/50">
+                  <th className="py-2 pr-3 font-medium">Rep</th>
+                  <th className="py-2 pr-3 font-medium">Aknicare</th>
+                  <th className="py-2 pr-3 font-medium">Closebax</th>
+                  <th className="py-2 pr-3 font-medium">Terproline</th>
+                  <th className="py-2 pr-3 font-medium">Rosacure</th>
+                  <th className="py-2 pr-3 font-medium">Κάλυψη</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/5">
+                {prescriptionMetrics.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-4 text-sm text-ink/50">
+                      Δεν υπάρχουν reps.
+                    </td>
+                  </tr>
+                )}
+                {prescriptionMetrics.map((m) => (
+                  <tr key={m.repId}>
+                    <td className="py-2.5 pr-3 font-medium text-ink">{m.repName}</td>
+                    {m.bySubBrand.map((b) => (
+                      <td key={b.brand} className="py-2.5 pr-3 tabular-nums text-ink/70">
+                        {b.average !== null ? b.average.toFixed(1) : "—"}
+                      </td>
+                    ))}
+                    <td className="py-2.5 pr-3 tabular-nums text-ink/70">
+                      {m.coverageCount}/{m.totalActive} ({m.coveragePct.toFixed(0)}%)
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -396,6 +449,7 @@ export default async function DashboardPage({
     : 0;
   const visitTrend = await getVisitTrend(supabase, cycle, profile.id);
   const regionBreakdown = await getRegionBreakdown(supabase, cycle, profile.id);
+  const prescriptionMetrics = await getRepPrescriptionMetrics(supabase, profile.id, profile.full_name);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -528,6 +582,17 @@ export default async function DashboardPage({
             colorClassName="bg-primary"
           />
         </div>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Συνταγογράφηση ανά Sub-brand</CardTitle>
+        </CardHeader>
+        <p className="mb-3 text-xs text-ink/50">
+          Κάλυψη: {prescriptionMetrics.coverageCount}/{prescriptionMetrics.totalActive} γιατρών (
+          {prescriptionMetrics.coveragePct.toFixed(0)}%)
+        </p>
+        <SubBrandBarChart stats={prescriptionMetrics.bySubBrand} />
       </Card>
 
       <Card className="mt-6">

@@ -86,7 +86,7 @@ export interface Database {
           pharmacy_2: string | null;
           weekly_rx_aknicare: number | null;
           weekly_rx_closebax: number | null;
-          weekly_rx_terproline: number | null;
+          weekly_rx_terproline: string | null;
           weekly_rx_rosacure: number | null;
           current_rep_id: string | null;
           status: DoctorStatus;
@@ -117,7 +117,7 @@ export interface Database {
           pharmacy_2: string | null;
           weekly_rx_aknicare: number | null;
           weekly_rx_closebax: number | null;
-          weekly_rx_terproline: number | null;
+          weekly_rx_terproline: string | null;
           weekly_rx_rosacure: number | null;
           current_rep_id: string | null;
           status: DoctorStatus;
@@ -151,7 +151,7 @@ export interface Database {
           pharmacy_2: string | null;
           weekly_rx_aknicare: number | null;
           weekly_rx_closebax: number | null;
-          weekly_rx_terproline: number | null;
+          weekly_rx_terproline: string | null;
           weekly_rx_rosacure: number | null;
           current_rep_id: string | null;
           status: DoctorStatus;
@@ -529,6 +529,56 @@ export interface Database {
             columns: ["rep_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      pharmacies: {
+        Row: {
+          id: string;
+          name: string;
+          city: string | null;
+          created_at: string;
+        };
+        Insert: {
+          name: string;
+          city?: string | null;
+        };
+        Update: Partial<{
+          name: string;
+          city: string | null;
+        }>;
+        Relationships: [];
+      };
+      doctor_pharmacies: {
+        Row: {
+          id: string;
+          doctor_id: string;
+          pharmacy_id: string;
+          role: "primary" | "secondary";
+          created_at: string;
+        };
+        Insert: {
+          doctor_id: string;
+          pharmacy_id: string;
+          role?: "primary" | "secondary";
+        };
+        Update: Partial<{
+          role: "primary" | "secondary";
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "doctor_pharmacies_doctor_id_fkey";
+            columns: ["doctor_id"];
+            isOneToOne: false;
+            referencedRelation: "doctors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "doctor_pharmacies_pharmacy_id_fkey";
+            columns: ["pharmacy_id"];
+            isOneToOne: false;
+            referencedRelation: "pharmacies";
             referencedColumns: ["id"];
           },
         ];

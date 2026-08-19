@@ -148,9 +148,8 @@ export function DoctorForm({
           </Field>
           <Field label="Terproline">
             <Input
-              type="number"
-              step="0.1"
-              min="0"
+              type="text"
+              placeholder="π.χ. 8 ή 5-10"
               name="weekly_rx_terproline"
               defaultValue={doctor?.weekly_rx_terproline ?? ""}
             />

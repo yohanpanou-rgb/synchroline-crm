@@ -15,7 +15,7 @@ interface DoctorSummary {
     phone_1: string | null;
     weekly_rx_aknicare: number | null;
     weekly_rx_closebax: number | null;
-    weekly_rx_terproline: number | null;
+    weekly_rx_terproline: string | null;
     weekly_rx_rosacure: number | null;
   };
   lastVisit: {
@@ -74,7 +74,7 @@ export function DoctorHoverCard({
 
   const products = summary
     ? PRODUCTS.map((p) => ({ ...p, value: summary.doctor[p.key] })).filter(
-        (p) => p.value !== null && p.value !== 0,
+        (p) => p.value !== null && p.value !== 0 && p.value !== "0",
       )
     : [];
 
