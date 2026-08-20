@@ -7,6 +7,7 @@ import {
   getDistinctSalesNomoi,
   getRepNomoi,
 } from "@/lib/queries/sales";
+import { getAssignableReps } from "@/lib/queries/reps";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
@@ -52,17 +53,29 @@ export default async function SalesPage({
     subBrand?: string;
     q?: string;
     period?: string;
+    rep?: string;
   }>;
 }) {
   const profile = await requireProfile();
   const manager = isManagerOrAdmin(profile.role);
   const supabase = await createClient();
-  const { nomos, subBrand, q, period: periodParam } = await searchParams;
+  const { nomos, subBrand, q, period: periodParam, rep } = await searchParams;
   const period: Period = periodParam === "mtd" ? "mtd" : "ytd";
   const { start, end } = periodRange(period);
 
-  const scopeNomoi = manager ? await getDistinctSalesNomoi(supabase) : await getRepNomoi(supabase, profile.id);
-  const activeNomoi = nomos ? [nomos] : manager ? undefined : scopeNomoi;
+  const [allNomoi, reps, repFilterNomoi] = await Promise.all([
+    manager ? getDistinctSalesNomoi(supabase) : Promise.resolve([]),
+    manager ? getAssignableReps(supabase) : Promise.resolve([]),
+    manager && rep ? getRepNomoi(supabase, rep) : Promise.resolve(undefined),
+  ]);
+
+  const scopeNomoi = manager ? allNomoi : await getRepNomoi(supabase, profile.id);
+  const nomosOptions = manager && repFilterNomoi ? repFilterNomoi : scopeNomoi;
+  const activeNomoi = nomos
+    ? [nomos]
+    : manager
+      ? repFilterNomoi
+      : scopeNomoi;
 
   const filters = {
     nomoi: activeNomoi,
@@ -81,7 +94,7 @@ export default async function SalesPage({
 
   function href(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams();
-    const merged = { nomos, subBrand, q, period, ...overrides };
+    const merged = { nomos, subBrand, q, period, rep, ...overrides };
     for (const [k, v] of Object.entries(merged)) {
       if (v) params.set(k, v);
     }
@@ -135,18 +148,32 @@ export default async function SalesPage({
           MTD
         </Link>
 
-        {(manager ? scopeNomoi : scopeNomoi).length > 1 && (
+        {(scopeNomoi.length > 1 || (manager && reps.length > 0)) && (
           <form action="/sales" className="ml-auto flex items-center gap-2">
             <input type="hidden" name="period" value={period} />
             {subBrand && <input type="hidden" name="subBrand" value={subBrand} />}
             {q && <input type="hidden" name="q" value={q} />}
+            {manager && reps.length > 0 && (
+              <select
+                name="rep"
+                defaultValue={rep ?? ""}
+                className="h-9 rounded-lg border border-black/10 bg-white px-2 text-xs"
+              >
+                <option value="">Όλοι οι reps</option>
+                {reps.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.full_name}
+                  </option>
+                ))}
+              </select>
+            )}
             <select
               name="nomos"
               defaultValue={nomos ?? ""}
               className="h-9 rounded-lg border border-black/10 bg-white px-2 text-xs"
             >
               <option value="">Όλοι οι νομοί</option>
-              {scopeNomoi.map((n) => (
+              {nomosOptions.map((n) => (
                 <option key={n} value={n}>
                   {n}
                 </option>

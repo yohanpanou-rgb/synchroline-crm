@@ -236,3 +236,30 @@ export async function updateDoctorRating(
   revalidatePath("/dashboard");
   return {};
 }
+
+/**
+ * Οριστική διαγραφή γιατρού (manager/admin μόνο, βλ. migration 0023). Αν ο
+ * γιατρός έχει καταχωρημένες επισκέψεις η διαγραφή μπλοκάρεται στη βάση
+ * (visits.doctor_id δεν έχει cascade, σκόπιμα — προστατεύει το ιστορικό) και
+ * εδώ επιστρέφουμε φιλικό μήνυμα αντί να σκάσει.
+ */
+export async function deleteDoctor(doctorId: string) {
+  const profile = await requireProfile();
+  if (!isManagerOrAdmin(profile.role)) {
+    redirect(`/doctors/${doctorId}?error=${encodeURIComponent("Μόνο manager μπορεί να διαγράψει γιατρό")}`);
+  }
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("doctors").delete().eq("id", doctorId);
+
+  if (error) {
+    const message = error.code === "23503"
+      ? "Δεν μπορεί να διαγραφεί — έχει καταχωρημένες επισκέψεις. Αρχειοθέτησέ τον αντ' αυτού."
+      : error.message;
+    redirect(`/doctors/${doctorId}?error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath("/doctors");
+  revalidatePath("/dashboard");
+  redirect("/doctors");
+}

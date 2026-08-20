@@ -23,32 +23,47 @@ function yearsAgo(dateISO: string, years: number): string {
   return toISODate(d);
 }
 
+const PAGE_SIZE = 1000;
+
+/** PostgREST caps unpaginated selects at 1000 rows — sales_records regularly
+ * exceeds that per period, so we page through the full result set. */
 async function fetchRows(
   supabase: Client,
   filters: SalesFilters,
   selectCols: string,
 ) {
-  let query = supabase
-    .from("sales_records")
-    .select(selectCols)
-    .eq("is_sample", false)
-    .gte("sale_date", filters.periodStart)
-    .lte("sale_date", filters.periodEnd);
+  const rows: unknown[] = [];
+  let from = 0;
 
-  if (filters.nomoi && filters.nomoi.length > 0) {
-    query = query.in("nomos", filters.nomoi);
-  }
-  if (filters.subBrand) {
-    query = query.eq("sub_brand", filters.subBrand);
-  }
-  if (filters.productCode) {
-    query = query.or(
-      `product_code.ilike.%${filters.productCode}%,product_description.ilike.%${filters.productCode}%`,
-    );
+  for (;;) {
+    let query = supabase
+      .from("sales_records")
+      .select(selectCols)
+      .eq("is_sample", false)
+      .gte("sale_date", filters.periodStart)
+      .lte("sale_date", filters.periodEnd);
+
+    if (filters.nomoi && filters.nomoi.length > 0) {
+      query = query.in("nomos", filters.nomoi);
+    }
+    if (filters.subBrand) {
+      query = query.eq("sub_brand", filters.subBrand);
+    }
+    if (filters.productCode) {
+      query = query.or(
+        `product_code.ilike.%${filters.productCode}%,product_description.ilike.%${filters.productCode}%`,
+      );
+    }
+
+    const { data } = await query.range(from, from + PAGE_SIZE - 1);
+    const page = data ?? [];
+    rows.push(...page);
+
+    if (page.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
   }
 
-  const { data } = await query;
-  return data ?? [];
+  return rows;
 }
 
 async function fetchTotals(supabase: Client, filters: SalesFilters): Promise<SalesTotals> {
@@ -165,8 +180,22 @@ export async function getSalesByGroup(
 
 /** Distinct νομοί που έχουν ήδη γραμμές πωλήσεων (για dropdown επιλογής στο admin/manager view). */
 export async function getDistinctSalesNomoi(supabase: Client): Promise<string[]> {
-  const { data } = await supabase.from("sales_records").select("nomos");
-  return [...new Set((data ?? []).map((r) => r.nomos))].sort((a, b) => a.localeCompare(b, "el"));
+  const nomoi = new Set<string>();
+  let from = 0;
+
+  for (;;) {
+    const { data } = await supabase
+      .from("sales_records")
+      .select("nomos")
+      .range(from, from + PAGE_SIZE - 1);
+    const page = data ?? [];
+    for (const r of page) nomoi.add(r.nomos);
+
+    if (page.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  return [...nomoi].sort((a, b) => a.localeCompare(b, "el"));
 }
 
 /** Νομοί ανατεθειμένοι σε συγκεκριμένο rep. */

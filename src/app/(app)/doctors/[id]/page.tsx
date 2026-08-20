@@ -12,6 +12,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { BackButton } from "@/components/ui/BackButton";
+import { DeleteDoctorButton } from "@/components/doctors/DeleteDoctorButton";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
 import { formatDateGR } from "@/lib/constants/schedule";
 import { updateDoctor } from "../actions";
@@ -143,6 +144,15 @@ export default async function DoctorDetailPage({
           </CardHeader>
           <ActivityHistory entries={history} />
         </Card>
+      )}
+
+      {manager && (
+        <div className="mt-4 flex justify-end">
+          <DeleteDoctorButton
+            doctorId={doctor.id}
+            doctorName={formatDoctorName(doctor.last_name, doctor.first_name)}
+          />
+        </div>
       )}
     </div>
   );

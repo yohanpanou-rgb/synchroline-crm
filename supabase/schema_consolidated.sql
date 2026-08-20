@@ -887,3 +887,7 @@ update public.doctors set rating_cpo = rating_cpo;
 -- σε αυτό το schema (η λίστα τιμών ζει στο UI <Select>, όχι στη βάση).
 alter table public.doctors
   add column academic_title text;
+-- Επιτρέπει σε manager/admin να διαγράφουν οριστικά γιατρούς (π.χ. θάνατος,
+-- αποχώρηση, λανθασμένη καταχώρηση) — δεν υπήρχε καμία delete policy πριν.
+create policy "doctors_delete_manager" on public.doctors
+  for delete using (public.current_user_role() in ('manager', 'admin'));
