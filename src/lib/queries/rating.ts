@@ -89,8 +89,8 @@ export async function getAllRepsRatingMetrics(
   );
 }
 
-export interface RegionRatingMetrics {
-  region: string;
+export interface CountyRatingMetrics {
+  county: string;
   total: number;
   ratingCounts: Record<RatingCpo, number>;
   activeCount: number;
@@ -101,29 +101,30 @@ export interface RegionRatingMetrics {
   pendingPct: number;
 }
 
-/** Ίδια στατιστικά αξιολόγησης με getAllRepsRatingMetrics, ομαδοποιημένα ανά Περιοχή αντί για rep. */
-export async function getRegionRatingMetrics(supabase: Client): Promise<RegionRatingMetrics[]> {
+/** Ίδια στατιστικά αξιολόγησης με getAllRepsRatingMetrics, ομαδοποιημένα ανά Νομό αντί για rep. */
+export async function getCountyRatingMetrics(supabase: Client): Promise<CountyRatingMetrics[]> {
   const { data } = await supabase
     .from("doctors")
-    .select("region, rating_cpo")
-    .eq("status", "active");
+    .select("county, rating_cpo")
+    .eq("status", "active")
+    .is("institution", null);
 
-  const byRegion = new Map<string, { total: number; ratingCounts: Record<RatingCpo, number> }>();
+  const byCounty = new Map<string, { total: number; ratingCounts: Record<RatingCpo, number> }>();
   for (const d of data ?? []) {
-    const region = d.region?.trim() || "Χωρίς περιοχή";
-    const entry = byRegion.get(region) ?? { total: 0, ratingCounts: emptyCounts() };
+    const county = d.county?.trim() || "Χωρίς νομό";
+    const entry = byCounty.get(county) ?? { total: 0, ratingCounts: emptyCounts() };
     entry.total++;
     entry.ratingCounts[d.rating_cpo]++;
-    byRegion.set(region, entry);
+    byCounty.set(county, entry);
   }
 
-  return [...byRegion.entries()]
-    .map(([region, { total, ratingCounts }]) => {
+  return [...byCounty.entries()]
+    .map(([county, { total, ratingCounts }]) => {
       const activeCount = ACTIVE_RATINGS.reduce((s, r) => s + ratingCounts[r], 0);
       const rating0Count = ratingCounts["0"];
       const pendingCount = ratingCounts["ΥΔ"];
       return {
-        region,
+        county,
         total,
         ratingCounts,
         activeCount,
