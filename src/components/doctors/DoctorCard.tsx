@@ -30,6 +30,9 @@ export function DoctorCard({ doctor }: { doctor: Doctor }) {
         <p className="truncate text-sm font-semibold text-ink">
           {formatDoctorName(doctor.last_name, doctor.first_name)}
         </p>
+        {doctor.academic_title && (
+          <p className="truncate text-xs text-primary">{doctor.academic_title}</p>
+        )}
         <p className="truncate text-xs text-ink/50">
           {[doctor.county, doctor.region].filter(Boolean).join(" · ") || "—"}
         </p>
