@@ -1,19 +1,18 @@
-import { signOut } from "@/app/(app)/actions";
+import { signOut, setViewRole } from "@/app/(app)/actions";
 import { Badge } from "@/components/ui/Badge";
 import { LogoutIcon } from "@/components/ui/icons";
-import type { Database } from "@/lib/types/database.types";
+import type { UserRole } from "@/lib/types/database.types";
+import type { ProfileWithViewRole } from "@/lib/supabase/profile";
 
-const ROLE_LABEL: Record<Database["public"]["Tables"]["profiles"]["Row"]["role"], string> = {
+const ROLE_LABEL: Record<UserRole, string> = {
   rep: "Rep",
   manager: "Manager",
   admin: "Admin",
 };
 
-export function Header({
-  profile,
-}: {
-  profile: Database["public"]["Tables"]["profiles"]["Row"];
-}) {
+export function Header({ profile }: { profile: ProfileWithViewRole }) {
+  const canSwitchView = profile.realRole === "manager" || profile.realRole === "admin";
+
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-black/5 bg-white/90 px-4 backdrop-blur md:px-6">
       <div className="flex items-center gap-2 md:hidden">
@@ -28,7 +27,28 @@ export function Header({
             {profile.full_name}
           </p>
         </div>
-        <Badge tone="neutral">{ROLE_LABEL[profile.role]}</Badge>
+
+        {canSwitchView ? (
+          <div className="flex gap-1 rounded-xl bg-black/5 p-1">
+            {(["manager", "rep"] as const).map((r) => (
+              <form key={r} action={setViewRole.bind(null, r)}>
+                <button
+                  type="submit"
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                    profile.role === r
+                      ? "bg-white text-primary shadow-sm"
+                      : "text-ink/50"
+                  }`}
+                >
+                  {r === "manager" ? "Ως Manager" : "Ως Rep"}
+                </button>
+              </form>
+            ))}
+          </div>
+        ) : (
+          <Badge tone="neutral">{ROLE_LABEL[profile.role]}</Badge>
+        )}
+
         <form action={signOut}>
           <button
             type="submit"
