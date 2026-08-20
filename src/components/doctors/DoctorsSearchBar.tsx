@@ -7,17 +7,21 @@ export function DoctorsSearchBar({
   initialQuery,
   regions,
   initialRegion,
+  reps,
+  initialRep,
 }: {
   initialQuery: string;
   regions: string[];
   initialRegion: string;
+  reps?: { id: string; full_name: string }[];
+  initialRep?: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(initialQuery);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function pushParams(next: { q?: string; region?: string }) {
+  function pushParams(next: { q?: string; region?: string; rep?: string }) {
     const params = new URLSearchParams(searchParams.toString());
     for (const [key, value] of Object.entries(next)) {
       if (value) params.set(key, value);
@@ -57,6 +61,20 @@ export function DoctorsSearchBar({
           </option>
         ))}
       </select>
+      {reps && reps.length > 0 && (
+        <select
+          defaultValue={initialRep ?? ""}
+          onChange={(e) => pushParams({ rep: e.target.value })}
+          className="h-11 shrink-0 rounded-xl border border-black/10 bg-white px-3 text-sm text-ink"
+        >
+          <option value="">Όλοι οι reps</option>
+          {reps.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.full_name}
+            </option>
+          ))}
+        </select>
+      )}
     </div>
   );
 }

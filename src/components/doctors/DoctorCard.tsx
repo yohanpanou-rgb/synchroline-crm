@@ -20,7 +20,13 @@ const STATUS_LABEL = {
   archived: "Αρχειοθετημένος",
 } as const;
 
-export function DoctorCard({ doctor }: { doctor: Doctor }) {
+export function DoctorCard({
+  doctor,
+  repName,
+}: {
+  doctor: Doctor;
+  repName?: string | null;
+}) {
   return (
     <Link
       href={`/doctors/${doctor.id}`}
@@ -36,6 +42,9 @@ export function DoctorCard({ doctor }: { doctor: Doctor }) {
         <p className="truncate text-xs text-ink/50">
           {[doctor.county, doctor.region].filter(Boolean).join(" · ") || "—"}
         </p>
+        {repName && (
+          <p className="truncate text-xs text-ink/40">{repName}</p>
+        )}
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
         <Badge tone={RATING_TONE[doctor.rating_cpo]}>
