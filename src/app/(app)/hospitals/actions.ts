@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
+import { requireProfile } from "@/lib/supabase/profile";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
 
 export interface DoctorSearchResult {
@@ -12,8 +12,7 @@ export interface DoctorSearchResult {
 }
 
 export async function createInstitution(name: string): Promise<{ error?: string }> {
-  const profile = await requireProfile();
-  if (!isManagerOrAdmin(profile.role)) return { error: "Μη επιτρεπτή ενέργεια." };
+  await requireProfile();
   if (!name.trim()) return { error: "Απαιτείται όνομα νοσοκομείου." };
 
   const supabase = await createClient();
@@ -26,8 +25,7 @@ export async function createInstitution(name: string): Promise<{ error?: string 
 
 /** Γιατροί που δεν ανήκουν ήδη σε κάποιο νοσοκομείο — υποψήφιοι για ανάθεση. */
 export async function searchAssignableDoctors(query: string): Promise<DoctorSearchResult[]> {
-  const profile = await requireProfile();
-  if (!isManagerOrAdmin(profile.role)) return [];
+  await requireProfile();
   if (!query.trim()) return [];
 
   const supabase = await createClient();
@@ -49,8 +47,7 @@ export async function assignDoctorToInstitution(
   doctorId: string,
   institution: string,
 ): Promise<{ error?: string }> {
-  const profile = await requireProfile();
-  if (!isManagerOrAdmin(profile.role)) return { error: "Μη επιτρεπτή ενέργεια." };
+  await requireProfile();
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -72,5 +69,33 @@ export async function assignDoctorToInstitution(
 
   revalidatePath("/hospitals");
   revalidatePath(`/doctors/${doctorId}`);
+  return {};
+}
+
+/**
+ * Αφαιρεί γιατρό από νοσοκομείο — ξαναγίνεται προσωπικό πελατολόγιο,
+ * ανατιθέμενος σε όποιον rep έκανε την αφαίρεση (μπορεί μετά να αλλάξει
+ * χειροκίνητα τον υπεύθυνο rep από την καρτέλα του γιατρού).
+ */
+export async function removeDoctorFromInstitution(doctorId: string): Promise<{ error?: string }> {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("doctors")
+    .update({ institution: null, current_rep_id: profile.id })
+    .eq("id", doctorId);
+  if (error) return { error: error.message };
+
+  await supabase.from("territory_assignments").insert({
+    doctor_id: doctorId,
+    rep_id: profile.id,
+    valid_from: new Date().toISOString().slice(0, 10),
+    created_by: profile.id,
+  });
+
+  revalidatePath("/hospitals");
+  revalidatePath(`/doctors/${doctorId}`);
+  revalidatePath("/doctors");
   return {};
 }

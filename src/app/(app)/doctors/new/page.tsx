@@ -16,13 +16,9 @@ export default async function NewDoctorPage({
   const { error, institution } = await searchParams;
   const manager = isManagerOrAdmin(profile.role);
 
-  let reps: { id: string; full_name: string }[] = [];
-  let institutions: string[] = [];
-  if (manager) {
-    const supabase = await createClient();
-    reps = await getAssignableReps(supabase);
-    institutions = await getInstitutionsList(supabase);
-  }
+  const supabase = await createClient();
+  const reps = await getAssignableReps(supabase);
+  const institutions = manager ? await getInstitutionsList(supabase) : [];
 
   return (
     <div className="mx-auto max-w-2xl">

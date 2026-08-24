@@ -1,20 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { DoctorCard } from "@/components/doctors/DoctorCard";
 import { AssignDoctorWidget } from "@/components/hospitals/AssignDoctorWidget";
+import { removeDoctorFromInstitution } from "@/app/(app)/hospitals/actions";
+import { formatDoctorName } from "@/lib/utils/name-normalization";
 import type { InstitutionGroup } from "@/lib/queries/institutions";
 import { cn } from "@/lib/utils/cn";
 
-export function HospitalAccordion({
-  groups,
-  manager,
-}: {
-  groups: InstitutionGroup[];
-  manager: boolean;
-}) {
+export function HospitalAccordion({ groups }: { groups: InstitutionGroup[] }) {
   const [openName, setOpenName] = useState<string | null>(groups[0]?.name ?? null);
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  function handleRemove(doctorId: string, doctorName: string) {
+    if (!window.confirm(`Αφαίρεση του "${doctorName}" από το νοσοκομείο;`)) return;
+    startTransition(async () => {
+      await removeDoctorFromInstitution(doctorId);
+      router.refresh();
+    });
+  }
 
   return (
     <div className="space-y-3">
@@ -48,19 +55,17 @@ export function HospitalAccordion({
             </button>
             {isOpen && (
               <div className="space-y-3 border-t border-black/5 p-3">
-                {manager && (
-                  <div className="flex flex-wrap items-center gap-2 rounded-xl bg-ink/5 p-2">
-                    <div className="min-w-[220px] flex-1">
-                      <AssignDoctorWidget institution={group.name} />
-                    </div>
-                    <Link
-                      href={`/doctors/new?institution=${encodeURIComponent(group.name)}`}
-                      className="whitespace-nowrap text-xs font-medium text-primary hover:underline"
-                    >
-                      + Νέος γιατρός εδώ
-                    </Link>
+                <div className="flex flex-wrap items-center gap-2 rounded-xl bg-ink/5 p-2">
+                  <div className="min-w-[220px] flex-1">
+                    <AssignDoctorWidget institution={group.name} />
                   </div>
-                )}
+                  <Link
+                    href={`/doctors/new?institution=${encodeURIComponent(group.name)}`}
+                    className="whitespace-nowrap text-xs font-medium text-primary hover:underline"
+                  >
+                    + Νέος γιατρός εδώ
+                  </Link>
+                </div>
                 {group.doctors.length === 0 ? (
                   <p className="py-2 text-center text-sm text-ink/50">
                     Δεν έχει ανατεθεί ακόμα κανένας γιατρός.
@@ -68,7 +73,24 @@ export function HospitalAccordion({
                 ) : (
                   <div className="space-y-2">
                     {group.doctors.map((doctor) => (
-                      <DoctorCard key={doctor.id} doctor={doctor} />
+                      <div key={doctor.id} className="flex items-center gap-2">
+                        <div className="min-w-0 flex-1">
+                          <DoctorCard doctor={doctor} />
+                        </div>
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() =>
+                            handleRemove(
+                              doctor.id,
+                              formatDoctorName(doctor.last_name, doctor.first_name),
+                            )
+                          }
+                          className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-danger hover:bg-danger/10 disabled:opacity-50"
+                        >
+                          Αφαίρεση
+                        </button>
+                      </div>
                     ))}
                   </div>
                 )}

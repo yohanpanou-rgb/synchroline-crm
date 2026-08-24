@@ -166,6 +166,19 @@ export function DoctorForm({
         </div>
       </div>
 
+      {reps && reps.length > 0 && (
+        <Field label="Υπεύθυνος rep">
+          <Select name="current_rep_id" defaultValue={doctor?.current_rep_id ?? ""}>
+            <option value="">— Κανένας —</option>
+            {reps.map((rep) => (
+              <option key={rep.id} value={rep.id}>
+                {rep.full_name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
+
       {isManager && (
         <>
           <div>
@@ -182,25 +195,13 @@ export function DoctorForm({
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Υπεύθυνος rep">
-              <Select name="current_rep_id" defaultValue={doctor?.current_rep_id ?? ""}>
-                <option value="">— Κανένας —</option>
-                {reps?.map((rep) => (
-                  <option key={rep.id} value={rep.id}>
-                    {rep.full_name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Κατάσταση">
-              <Select name="status" defaultValue={doctor?.status ?? "pending_approval"}>
-                <option value="pending_approval">Εκκρεμεί έγκριση</option>
-                <option value="active">Ενεργός</option>
-                <option value="archived">Αρχειοθετημένος</option>
-              </Select>
-            </Field>
-          </div>
+          <Field label="Κατάσταση">
+            <Select name="status" defaultValue={doctor?.status ?? "pending_approval"}>
+              <option value="pending_approval">Εκκρεμεί έγκριση</option>
+              <option value="active">Ενεργός</option>
+              <option value="archived">Αρχειοθετημένος</option>
+            </Select>
+          </Field>
 
           <div>
             <Field label="Νοσοκομείο (κοινόχρηστο πελατολόγιο)">

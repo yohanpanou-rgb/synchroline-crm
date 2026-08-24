@@ -78,7 +78,7 @@ export async function createDoctor(formData: FormData) {
   }
 
   const institution = manager ? str(formData, "institution") : null;
-  const currentRepId = institution ? null : manager ? str(formData, "current_rep_id") : profile.id;
+  const currentRepId = institution ? null : (str(formData, "current_rep_id") ?? profile.id);
   const status: DoctorStatus = manager
     ? ((str(formData, "status") as DoctorStatus) ?? "pending_approval")
     : "pending_approval";
@@ -120,7 +120,7 @@ export async function createDoctor(formData: FormData) {
     );
   }
 
-  if (manager && currentRepId) {
+  if (currentRepId) {
     await syncTerritoryAssignment(supabase, doctor.id, currentRepId, profile.id);
   }
 
@@ -129,13 +129,13 @@ export async function createDoctor(formData: FormData) {
 }
 
 /**
- * Reps μπορούν πλέον να επεξεργαστούν τα βασικά στοιχεία των δικών τους
- * γιατρών (περιοχή, στοιχεία επικοινωνίας, προτεραιότητα, συνταγογράφηση
- * κλπ) — μόνο manager/admin αλλάζουν brick/ανάθεση rep/κατάσταση (DoctorForm
- * δεν εμφανίζει καν αυτά τα πεδία σε μη-manager). Η πραγματική προστασία
- * ΠΟΙΕΣ στήλες όντως αλλάζουν για ρόλο 'rep' γίνεται στη βάση (trigger,
- * migration 0019) — ό,τι στέλνει η φόρμα εδώ για μη-επιτρεπτά πεδία
- * αγνοείται εκεί σιωπηλά, οπότε δεν χρειάζεται διπλός έλεγχος εδώ.
+ * Reps μπορούν να επεξεργαστούν τα βασικά στοιχεία των δικών τους γιατρών
+ * (περιοχή, στοιχεία επικοινωνίας, προτεραιότητα, συνταγογράφηση κλπ) ΚΑΙ
+ * να αλλάξουν τον υπεύθυνο rep (current_rep_id) — π.χ. handoff σε άλλον
+ * rep. brick/κατάσταση/νοσοκομείο/τίτλος παραμένουν manager/admin (DoctorForm
+ * δεν τα εμφανίζει καν σε μη-manager). Η πραγματική προστασία ΠΟΙΕΣ στήλες
+ * όντως αλλάζουν για ρόλο 'rep' γίνεται στη βάση (trigger, migration 0024) —
+ * ό,τι στέλνει η φόρμα εδώ για μη-επιτρεπτά πεδία αγνοείται εκεί σιωπηλά.
  */
 export async function updateDoctor(doctorId: string, formData: FormData) {
   const profile = await requireProfile();
@@ -152,11 +152,7 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
   }
 
   const institution = manager ? str(formData, "institution") : undefined;
-  const currentRepId = manager
-    ? institution
-      ? null
-      : str(formData, "current_rep_id")
-    : undefined;
+  const currentRepId = institution ? null : str(formData, "current_rep_id");
 
   const { error } = await supabase
     .from("doctors")
@@ -180,10 +176,10 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
       address: str(formData, "address"),
       notes: str(formData, "notes"),
       hq_type: str(formData, "hq_type") as HqType | null,
+      current_rep_id: currentRepId ?? null,
       ...(manager
         ? {
             brick_code: brickCode ?? null,
-            current_rep_id: currentRepId ?? null,
             institution: institution ?? null,
             academic_title: str(formData, "academic_title"),
             status: (str(formData, "status") as DoctorStatus) ?? "active",
@@ -196,9 +192,7 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
     redirect(`/doctors/${doctorId}?error=${encodeURIComponent(error.message)}`);
   }
 
-  if (manager) {
-    await syncTerritoryAssignment(supabase, doctorId, currentRepId ?? null, profile.id);
-  }
+  await syncTerritoryAssignment(supabase, doctorId, currentRepId ?? null, profile.id);
 
   revalidatePath("/doctors");
   revalidatePath(`/doctors/${doctorId}`);

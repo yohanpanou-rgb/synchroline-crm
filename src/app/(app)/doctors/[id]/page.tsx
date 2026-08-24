@@ -65,7 +65,7 @@ export default async function DoctorDetailPage({
     .order("scheduled_date", { ascending: false })
     .limit(10);
 
-  const reps = manager ? await getAssignableReps(supabase) : [];
+  const reps = await getAssignableReps(supabase);
   const institutions = manager ? await getInstitutionsList(supabase) : [];
   const history = manager ? await getRecordHistory(supabase, "doctors", id) : [];
   const pharmacyLinks = await getDoctorPharmacies(supabase, id);
