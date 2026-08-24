@@ -36,7 +36,8 @@ export async function getRepMetrics(
     .from("doctors")
     .select("id", { count: "exact", head: true })
     .eq("current_rep_id", repId)
-    .eq("status", "active");
+    .eq("status", "active")
+    .neq("rating_cpo", "0");
 
   if (!cycle) {
     return {

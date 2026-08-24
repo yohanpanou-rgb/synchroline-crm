@@ -18,7 +18,7 @@ export default async function NewDoctorPage({
 
   const supabase = await createClient();
   const reps = await getAssignableReps(supabase);
-  const institutions = manager ? await getInstitutionsList(supabase) : [];
+  const institutions = await getInstitutionsList(supabase);
 
   return (
     <div className="mx-auto max-w-2xl">

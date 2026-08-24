@@ -179,6 +179,26 @@ export function DoctorForm({
         </Field>
       )}
 
+      {institutions && (
+        <div>
+          <Field label="Νοσοκομείο (κοινόχρηστο πελατολόγιο)">
+            <Input
+              name="institution"
+              list="institutions-list"
+              defaultValue={doctor?.institution ?? defaultInstitution ?? ""}
+              placeholder="— Κανένα (προσωπικό πελατολόγιο) —"
+            />
+            <datalist id="institutions-list">
+              {institutions.map((name) => <option key={name} value={name} />)}
+            </datalist>
+          </Field>
+          <p className="mt-1 text-xs text-ink/50">
+            Αν οριστεί, ο γιατρός γίνεται κοινόχρηστος (Νοσοκομεία) και ο
+            «Υπεύθυνος rep» παραπάνω αγνοείται.
+          </p>
+        </div>
+      )}
+
       {isManager && (
         <>
           <div>
@@ -202,24 +222,6 @@ export function DoctorForm({
               <option value="archived">Αρχειοθετημένος</option>
             </Select>
           </Field>
-
-          <div>
-            <Field label="Νοσοκομείο (κοινόχρηστο πελατολόγιο)">
-              <Input
-                name="institution"
-                list="institutions-list"
-                defaultValue={doctor?.institution ?? defaultInstitution ?? ""}
-                placeholder="— Κανένα (προσωπικό πελατολόγιο) —"
-              />
-              <datalist id="institutions-list">
-                {institutions?.map((name) => <option key={name} value={name} />)}
-              </datalist>
-            </Field>
-            <p className="mt-1 text-xs text-ink/50">
-              Αν οριστεί, ο γιατρός γίνεται κοινόχρηστος (Νοσοκομεία) και ο
-              «Υπεύθυνος rep» παραπάνω αγνοείται.
-            </p>
-          </div>
 
           <Field label="Τίτλος (νοσοκομειακοί γιατροί)">
             <Select name="academic_title" defaultValue={doctor?.academic_title ?? ""}>
