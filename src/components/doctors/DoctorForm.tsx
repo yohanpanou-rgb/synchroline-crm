@@ -199,42 +199,38 @@ export function DoctorForm({
         </div>
       )}
 
-      {isManager && (
-        <>
-          <div>
-            <h3 className="mb-3 text-sm font-semibold text-primary-dark">
-              Brick (IMS/IQVIA)
-            </h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Κωδικός brick">
-                <Input name="brick_code" defaultValue={doctor?.brick_code ?? ""} />
-              </Field>
-              <Field label="Όνομα brick">
-                <Input name="brick_name" placeholder="προαιρετικό" />
-              </Field>
-            </div>
-          </div>
-
-          <Field label="Κατάσταση">
-            <Select name="status" defaultValue={doctor?.status ?? "pending_approval"}>
-              <option value="pending_approval">Εκκρεμεί έγκριση</option>
-              <option value="active">Ενεργός</option>
-              <option value="archived">Αρχειοθετημένος</option>
-            </Select>
+      <div>
+        <h3 className="mb-3 text-sm font-semibold text-primary-dark">
+          Brick (IMS/IQVIA)
+        </h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Κωδικός brick">
+            <Input name="brick_code" defaultValue={doctor?.brick_code ?? ""} />
           </Field>
-
-          <Field label="Τίτλος (νοσοκομειακοί γιατροί)">
-            <Select name="academic_title" defaultValue={doctor?.academic_title ?? ""}>
-              <option value="">—</option>
-              {ACADEMIC_TITLES.map((title) => (
-                <option key={title} value={title}>
-                  {title}
-                </option>
-              ))}
-            </Select>
+          <Field label="Όνομα brick">
+            <Input name="brick_name" placeholder="προαιρετικό" />
           </Field>
-        </>
-      )}
+        </div>
+      </div>
+
+      <Field label="Κατάσταση">
+        <Select name="status" defaultValue={doctor?.status ?? "pending_approval"}>
+          <option value="pending_approval">Εκκρεμεί έγκριση</option>
+          <option value="active">Ενεργός</option>
+          <option value="archived">Αρχειοθετημένος</option>
+        </Select>
+      </Field>
+
+      <Field label="Τίτλος (νοσοκομειακοί γιατροί)">
+        <Select name="academic_title" defaultValue={doctor?.academic_title ?? ""}>
+          <option value="">—</option>
+          {ACADEMIC_TITLES.map((title) => (
+            <option key={title} value={title}>
+              {title}
+            </option>
+          ))}
+        </Select>
+      </Field>
 
       <Button type="submit" size="lg">
         {submitLabel}

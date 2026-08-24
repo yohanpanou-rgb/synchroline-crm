@@ -129,29 +129,25 @@ export async function createDoctor(formData: FormData) {
 }
 
 /**
- * Reps μπορούν να επεξεργαστούν τα βασικά στοιχεία των δικών τους γιατρών
- * (περιοχή, στοιχεία επικοινωνίας, προτεραιότητα, συνταγογράφηση κλπ) ΚΑΙ
- * να αλλάξουν τον υπεύθυνο rep (current_rep_id) — π.χ. handoff σε άλλον
- * rep. brick/κατάσταση/νοσοκομείο/τίτλος παραμένουν manager/admin (DoctorForm
- * δεν τα εμφανίζει καν σε μη-manager). Η πραγματική προστασία ΠΟΙΕΣ στήλες
- * όντως αλλάζουν για ρόλο 'rep' γίνεται στη βάση (trigger, migration 0024) —
- * ό,τι στέλνει η φόρμα εδώ για μη-επιτρεπτά πεδία αγνοείται εκεί σιωπηλά.
+ * Reps μπορούν πλέον να επεξεργαστούν κάθε πεδίο της καρτέλας γιατρού —
+ * ίδια δικαιώματα με manager/admin σε αυτή τη φόρμα (brick, κατάσταση,
+ * νοσοκομείο, τίτλος, υπεύθυνος rep). Η πραγματική προστασία ΠΟΙΕΣ στήλες
+ * όντως αλλάζουν για ρόλο 'rep' γίνεται στη βάση (trigger, migration 0025).
  */
 export async function updateDoctor(doctorId: string, formData: FormData) {
   const profile = await requireProfile();
-  const manager = isManagerOrAdmin(profile.role);
   const supabase = await createClient();
 
   const fullNameRaw = str(formData, "full_name_raw") ?? "";
   const { lastName, firstName } = normalizeDoctorName(fullNameRaw);
 
-  const brickCode = manager ? str(formData, "brick_code") : undefined;
-  const brickName = manager ? str(formData, "brick_name") : undefined;
-  if (manager && brickCode) {
+  const brickCode = str(formData, "brick_code");
+  const brickName = str(formData, "brick_name");
+  if (brickCode) {
     await supabase.from("bricks").upsert({ code: brickCode, name: brickName });
   }
 
-  const institution = manager ? str(formData, "institution") : undefined;
+  const institution = str(formData, "institution");
   const currentRepId = institution ? null : str(formData, "current_rep_id");
 
   const { error } = await supabase
@@ -177,14 +173,10 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
       notes: str(formData, "notes"),
       hq_type: str(formData, "hq_type") as HqType | null,
       current_rep_id: currentRepId ?? null,
-      ...(manager
-        ? {
-            brick_code: brickCode ?? null,
-            institution: institution ?? null,
-            academic_title: str(formData, "academic_title"),
-            status: (str(formData, "status") as DoctorStatus) ?? "active",
-          }
-        : {}),
+      brick_code: brickCode ?? null,
+      institution: institution ?? null,
+      academic_title: str(formData, "academic_title"),
+      status: (str(formData, "status") as DoctorStatus) ?? "active",
     })
     .eq("id", doctorId);
 
