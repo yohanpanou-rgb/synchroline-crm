@@ -82,6 +82,9 @@ export default async function DoctorDetailPage({
             <Badge tone={STATUS_TONE[doctor.status]}>
               {STATUS_LABEL[doctor.status]}
             </Badge>
+            {doctor.is_candela_client && (
+              <Badge tone="neutral">Πελάτης Candela</Badge>
+            )}
           </div>
         </div>
         <Link href={`/visits/new?doctorId=${doctor.id}`}>

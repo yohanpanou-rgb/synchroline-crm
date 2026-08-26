@@ -41,6 +41,11 @@ export function DoctorCard({
         )}
         <p className="truncate text-xs text-ink/50">
           {[doctor.county, doctor.region].filter(Boolean).join(" · ") || "—"}
+          {doctor.is_candela_client && (
+            <span className="ml-1.5 rounded bg-ink/10 px-1 py-0.5 text-[10px] font-medium text-ink/60">
+              Candela
+            </span>
+          )}
         </p>
         {repName && (
           <p className="truncate text-xs text-ink/40">{repName}</p>

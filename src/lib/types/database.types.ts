@@ -103,6 +103,7 @@ export interface Database {
           rating_cpo: RatingCpo;
           institution: string | null;
           academic_title: string | null;
+          is_candela_client: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -136,6 +137,7 @@ export interface Database {
           rating_cpo: RatingCpo;
           institution: string | null;
           academic_title: string | null;
+          is_candela_client: boolean;
         }> & {
           last_name: string;
           first_name: string;
@@ -172,6 +174,7 @@ export interface Database {
           rating_cpo: RatingCpo;
           institution: string | null;
           academic_title: string | null;
+          is_candela_client: boolean;
         }>;
         Relationships: [
           {
