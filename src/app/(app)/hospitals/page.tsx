@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/supabase/profile";
+import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { getInstitutionGroups } from "@/lib/queries/institutions";
 import { HospitalAccordion } from "@/components/hospitals/HospitalAccordion";
 import { Card } from "@/components/ui/Card";
@@ -13,9 +13,10 @@ export default async function HospitalsPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireProfile();
+  const profile = await requireProfile();
+  const manager = isManagerOrAdmin(profile.role);
   const supabase = await createClient();
-  const groups = await getInstitutionGroups(supabase);
+  const groups = await getInstitutionGroups(supabase, manager ? undefined : profile.id);
   const { error } = await searchParams;
 
   async function handleCreateInstitution(formData: FormData) {
@@ -33,8 +34,10 @@ export default async function HospitalsPage({
         Νοσοκομεία
       </h1>
       <p className="mb-6 text-sm text-ink/50">
-        Κοινόχρηστο πελατολόγιο ανά νοσοκομείο — δεν ανήκει στο προσωπικό
-        πελατολόγιο κανενός rep.
+        Ομαδοποίηση γιατρών ανά νοσοκομείο. Μόνο τα κοινόχρηστα νοσοκομεία
+        (π.χ. Σύγγρος) δεν ανήκουν στο προσωπικό πελατολόγιο κανενός rep — τα
+        υπόλοιπα είναι απλώς ετικέτα χώρου εργασίας πάνω στους δικούς σου
+        γιατρούς.
       </p>
 
       {error && (

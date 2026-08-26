@@ -597,13 +597,16 @@ export interface Database {
         Row: {
           id: string;
           name: string;
+          is_shared: boolean;
           created_at: string;
         };
         Insert: {
           name: string;
+          is_shared?: boolean;
         };
         Update: Partial<{
           name: string;
+          is_shared: boolean;
         }>;
         Relationships: [];
       };

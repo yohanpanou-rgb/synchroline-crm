@@ -5,14 +5,15 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
-import { formatDoctorName } from "@/lib/utils/name-normalization";
 import { TIME_SLOTS } from "@/lib/constants/schedule";
+import { DoctorCombobox } from "@/components/visits/DoctorCombobox";
 import type { ProductName, VisitStatus, VisitType } from "@/lib/types/database.types";
 
 interface DoctorOption {
   id: string;
   last_name: string;
   first_name: string;
+  institution?: string | null;
 }
 interface RepOption {
   id: string;
@@ -96,16 +97,7 @@ export function VisitForm({
           </div>
         ) : (
           <Field label="Γιατρός">
-            <Select name="doctor_id" required defaultValue={defaultDoctorId ?? ""}>
-              <option value="" disabled>
-                Επίλεξε γιατρό
-              </option>
-              {doctors.map((doctor) => (
-                <option key={doctor.id} value={doctor.id}>
-                  {formatDoctorName(doctor.last_name, doctor.first_name)}
-                </option>
-              ))}
-            </Select>
+            <DoctorCombobox name="doctor_id" doctors={doctors} defaultDoctorId={defaultDoctorId} />
           </Field>
         )}
 

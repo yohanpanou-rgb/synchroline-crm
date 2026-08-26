@@ -19,7 +19,7 @@ export default async function NewVisitPage({
 
   let doctorsQuery = supabase
     .from("doctors")
-    .select("id, last_name, first_name")
+    .select("id, last_name, first_name, institution")
     .eq("status", "active")
     .order("last_name");
 

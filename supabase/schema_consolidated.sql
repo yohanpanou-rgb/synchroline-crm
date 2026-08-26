@@ -1000,3 +1000,13 @@ begin
   return jsonb_populate_record(old, merged);
 end;
 $$;
+-- Διαχωρισμός "κοινόχρηστων" νοσοκομείων (π.χ. Σύγγρος — πραγματικά κοινό
+-- πελατολόγιο, δεν ανήκει σε κανέναν rep) από τα υπόλοιπα, όπου το
+-- "Νοσοκομείο" είναι απλώς ετικέτα χώρου εργασίας πάνω στον ήδη υπάρχοντα
+-- γιατρό ενός rep — δεν πρέπει να τον αφαιρεί από το πελατολόγιό του.
+-- Feedback από Σάββα: η γενίκευση σε "Νοσοκομεία" (migration 0018/0020)
+-- έκανε ΟΛΑ τα νοσοκομεία κοινόχρηστα, κάτι λάθος για μη-κοινά νοσοκομεία.
+alter table public.institutions
+  add column is_shared boolean not null default false;
+
+update public.institutions set is_shared = true where name = 'ΣΥΓΓΡΟΣ';

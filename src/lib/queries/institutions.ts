@@ -7,6 +7,7 @@ type Doctor = Database["public"]["Tables"]["doctors"]["Row"];
 
 export interface InstitutionGroup {
   name: string;
+  isShared: boolean;
   doctors: Doctor[];
 }
 
@@ -19,11 +20,16 @@ export async function getInstitutionsList(supabase: Client): Promise<string[]> {
 /**
  * Όλα τα νοσοκομεία από τον κατάλογο, με τους γιατρούς τους (άδεια λίστα αν
  * δεν έχει ανατεθεί ακόμα κανείς) — έτσι ένα νοσοκομείο εμφανίζεται στη
- * λίστα ακόμα κι αν δεν έχει γιατρούς ακόμα.
+ * λίστα ακόμα κι αν δεν έχει γιατρούς ακόμα. Αν δοθεί `onlyRelevantToRepId`,
+ * επιστρέφονται μόνο τα κοινόχρηστα (is_shared) νοσοκομεία και όσα έχουν
+ * τουλάχιστον έναν γιατρό του συγκεκριμένου rep (feedback Σάββα, #4).
  */
-export async function getInstitutionGroups(supabase: Client): Promise<InstitutionGroup[]> {
+export async function getInstitutionGroups(
+  supabase: Client,
+  onlyRelevantToRepId?: string,
+): Promise<InstitutionGroup[]> {
   const [{ data: institutions }, { data: doctors }] = await Promise.all([
-    supabase.from("institutions").select("name").order("name"),
+    supabase.from("institutions").select("name, is_shared").order("name"),
     supabase
       .from("doctors")
       .select("*")
@@ -31,9 +37,11 @@ export async function getInstitutionGroups(supabase: Client): Promise<Institutio
       .order("last_name", { ascending: true }),
   ]);
 
+  const sharedByName = new Map<string, boolean>();
   const byName = new Map<string, Doctor[]>();
-  for (const name of (institutions ?? []).map((i) => i.name)) {
-    byName.set(name, []);
+  for (const inst of institutions ?? []) {
+    sharedByName.set(inst.name, inst.is_shared);
+    byName.set(inst.name, []);
   }
   for (const d of doctors ?? []) {
     const name = d.institution!;
@@ -42,9 +50,19 @@ export async function getInstitutionGroups(supabase: Client): Promise<Institutio
     byName.set(name, arr);
   }
 
-  return [...byName.entries()]
-    .map(([name, docs]) => ({ name, doctors: docs }))
-    .sort((a, b) => b.doctors.length - a.doctors.length);
+  let groups = [...byName.entries()].map(([name, docs]) => ({
+    name,
+    isShared: sharedByName.get(name) ?? false,
+    doctors: docs,
+  }));
+
+  if (onlyRelevantToRepId) {
+    groups = groups.filter(
+      (g) => g.isShared || g.doctors.some((d) => d.current_rep_id === onlyRelevantToRepId),
+    );
+  }
+
+  return groups.sort((a, b) => b.doctors.length - a.doctors.length);
 }
 
 export interface InstitutionVisitStats {
