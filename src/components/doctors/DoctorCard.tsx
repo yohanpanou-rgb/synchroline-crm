@@ -28,40 +28,50 @@ export function DoctorCard({
   repName?: string | null;
 }) {
   return (
-    <Link
-      href={`/doctors/${doctor.id}`}
-      className="flex items-center justify-between gap-3 rounded-2xl border border-black/5 bg-white p-4 shadow-sm transition-colors hover:border-primary/30"
-    >
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-ink">
-          {formatDoctorName(doctor.last_name, doctor.first_name)}
-        </p>
-        {doctor.academic_title && (
-          <p className="truncate text-xs text-primary">{doctor.academic_title}</p>
-        )}
-        <p className="truncate text-xs text-ink/50">
-          {[doctor.county, doctor.region].filter(Boolean).join(" · ") || "—"}
-          {doctor.is_candela_client && (
-            <span className="ml-1.5 rounded bg-ink/10 px-1 py-0.5 text-[10px] font-medium text-ink/60">
-              Candela
-            </span>
+    <div className="flex items-center gap-2 rounded-2xl border border-black/5 bg-white p-4 shadow-sm transition-colors hover:border-primary/30">
+      <Link href={`/doctors/${doctor.id}`} className="flex min-w-0 flex-1 items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-ink">
+            {formatDoctorName(doctor.last_name, doctor.first_name)}
+          </p>
+          {doctor.academic_title && (
+            <p className="truncate text-xs text-primary">{doctor.academic_title}</p>
           )}
-        </p>
-        {repName && (
-          <p className="truncate text-xs text-ink/40">{repName}</p>
-        )}
-      </div>
-      <div className="flex shrink-0 flex-col items-end gap-1">
-        <Badge tone={RATING_TONE[doctor.rating_cpo]}>
-          {RATING_CPO_LABEL[doctor.rating_cpo]}
-        </Badge>
-        {doctor.priority_color && (
-          <Badge tone="neutral">Προτεραιότητα {doctor.priority_color}</Badge>
-        )}
-        {doctor.status !== "active" && (
-          <Badge tone="neutral">{STATUS_LABEL[doctor.status]}</Badge>
-        )}
-      </div>
-    </Link>
+          <p className="truncate text-xs text-ink/50">
+            {[doctor.county, doctor.region].filter(Boolean).join(" · ") || "—"}
+            {doctor.is_candela_client && (
+              <span className="ml-1.5 rounded bg-ink/10 px-1 py-0.5 text-[10px] font-medium text-ink/60">
+                Candela
+              </span>
+            )}
+          </p>
+          {repName && (
+            <p className="truncate text-xs text-ink/40">{repName}</p>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <Badge tone={RATING_TONE[doctor.rating_cpo]}>
+            {RATING_CPO_LABEL[doctor.rating_cpo]}
+          </Badge>
+          {doctor.priority_color && (
+            <Badge tone="neutral">Προτεραιότητα {doctor.priority_color}</Badge>
+          )}
+          {doctor.status !== "active" && (
+            <Badge tone="neutral">{STATUS_LABEL[doctor.status]}</Badge>
+          )}
+        </div>
+      </Link>
+      {doctor.status === "active" && (
+        <Link
+          href={`/visits/new?doctorId=${doctor.id}&status=completed`}
+          title="Γρήγορη καταγραφή επίσκεψης"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-primary hover:bg-primary/10"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </Link>
+      )}
+    </div>
   );
 }

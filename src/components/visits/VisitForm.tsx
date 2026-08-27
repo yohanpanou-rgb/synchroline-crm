@@ -27,6 +27,16 @@ const PRODUCTS = [
   { key: "rosacure", label: "Rosacure" },
 ] as const;
 
+const NOTE_TEMPLATES = [
+  "Συζητήθηκε Aknicare",
+  "Συζητήθηκε Closebax",
+  "Συζητήθηκε Terproline",
+  "Συζητήθηκε Rosacure",
+  "Ζήτησε δείγματα",
+  "Θετική ανταπόκριση",
+  "Να ξαναπεραστεί σύντομα",
+];
+
 export interface VisitFormValues {
   doctor_id: string;
   rep_id: string;
@@ -55,6 +65,7 @@ export function VisitForm({
   defaultDoctorId,
   defaultDate,
   defaultTime,
+  defaultStatus,
   cycleId,
   cycleName,
   visit,
@@ -68,6 +79,7 @@ export function VisitForm({
   defaultDoctorId?: string;
   defaultDate?: string;
   defaultTime?: string;
+  defaultStatus?: VisitStatus;
   cycleId?: string;
   cycleName?: string;
   visit?: VisitFormValues;
@@ -76,7 +88,12 @@ export function VisitForm({
   submitLabel?: string;
 }) {
   const isEdit = !!visit;
-  const [status, setStatus] = useState<VisitStatus>(visit?.status ?? "planned");
+  const [status, setStatus] = useState<VisitStatus>(visit?.status ?? defaultStatus ?? "planned");
+  const [notes, setNotes] = useState(visit?.notes ?? "");
+
+  function addTemplate(phrase: string) {
+    setNotes((prev) => (prev.trim() ? `${prev.trim()}. ${phrase}` : phrase));
+  }
   const today = new Date().toISOString().slice(0, 10);
   const scheduledDefault = visit?.scheduled_date ?? defaultDate ?? today;
   const completedDefault = visit?.completed_date ?? visit?.scheduled_date ?? today;
@@ -177,10 +194,23 @@ export function VisitForm({
       </div>
 
       <Field label="Σημειώσεις επίσκεψης">
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {NOTE_TEMPLATES.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => addTemplate(t)}
+              className="rounded-full bg-ink/5 px-2.5 py-1 text-xs text-ink/60 hover:bg-ink/10"
+            >
+              + {t}
+            </button>
+          ))}
+        </div>
         <Textarea
           name="notes"
           placeholder="Σχόλια, θέματα που συζητήθηκαν…"
-          defaultValue={visit?.notes ?? ""}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
         />
       </Field>
 

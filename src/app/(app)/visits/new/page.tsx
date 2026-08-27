@@ -10,10 +10,16 @@ import { createVisit } from "../actions";
 export default async function NewVisitPage({
   searchParams,
 }: {
-  searchParams: Promise<{ doctorId?: string; date?: string; time?: string; error?: string }>;
+  searchParams: Promise<{
+    doctorId?: string;
+    date?: string;
+    time?: string;
+    error?: string;
+    status?: string;
+  }>;
 }) {
   const profile = await requireProfile();
-  const { doctorId, date, time, error } = await searchParams;
+  const { doctorId, date, time, error, status } = await searchParams;
   const manager = isManagerOrAdmin(profile.role);
   const supabase = await createClient();
 
@@ -61,6 +67,7 @@ export default async function NewVisitPage({
           defaultDoctorId={doctorId}
           defaultDate={date}
           defaultTime={time}
+          defaultStatus={status === "completed" ? "completed" : undefined}
           cycleId={cycle?.id}
           cycleName={cycle?.name}
         />

@@ -65,6 +65,32 @@ export default async function DoctorDetailPage({
     .order("scheduled_date", { ascending: false })
     .limit(10);
 
+  const completedDates = (visits ?? [])
+    .filter((v) => v.status === "completed")
+    .map((v) => v.completed_date ?? v.scheduled_date)
+    .filter((d): d is string => !!d)
+    .sort((a, b) => (a < b ? 1 : -1)); // desc
+
+  let daysSinceLastVisit: number | null = null;
+  let avgIntervalDays: number | null = null;
+  const [firstCompletedDate] = completedDates;
+  if (firstCompletedDate) {
+    daysSinceLastVisit = Math.floor(
+      (Date.now() - new Date(firstCompletedDate).getTime()) / 86_400_000,
+    );
+  }
+  if (completedDates.length > 1) {
+    const gaps: number[] = [];
+    for (let i = 0; i < completedDates.length - 1; i++) {
+      const a = completedDates[i];
+      const b = completedDates[i + 1];
+      if (!a || !b) continue;
+      const gap = (new Date(a).getTime() - new Date(b).getTime()) / 86_400_000;
+      gaps.push(gap);
+    }
+    avgIntervalDays = Math.round(gaps.reduce((s, g) => s + g, 0) / gaps.length);
+  }
+
   const reps = await getAssignableReps(supabase);
   const institutions = await getInstitutionsList(supabase);
   const history = manager ? await getRecordHistory(supabase, "doctors", id) : [];
@@ -117,37 +143,65 @@ export default async function DoctorDetailPage({
         />
       </Card>
 
+      {(daysSinceLastVisit !== null || avgIntervalDays !== null) && (
+        <div className="mb-4 grid grid-cols-2 gap-3">
+          {daysSinceLastVisit !== null && (
+            <Card>
+              <p className="text-xs font-medium text-ink/50">Τελευταία επίσκεψη</p>
+              <p className="mt-1 text-lg font-semibold text-primary-dark">
+                {daysSinceLastVisit === 0 ? "Σήμερα" : `πριν ${daysSinceLastVisit} μέρες`}
+              </p>
+            </Card>
+          )}
+          {avgIntervalDays !== null && (
+            <Card>
+              <p className="text-xs font-medium text-ink/50">Μέση συχνότητα</p>
+              <p className="mt-1 text-lg font-semibold text-primary-dark">
+                κάθε {avgIntervalDays} μέρες
+              </p>
+            </Card>
+          )}
+        </div>
+      )}
+
       <Card>
         <CardHeader>
-          <CardTitle>Πρόσφατες επισκέψεις</CardTitle>
+          <CardTitle>Ιστορικό</CardTitle>
         </CardHeader>
         <div className="divide-y divide-black/5">
-          {(!visits || visits.length === 0) && (
-            <p className="py-4 text-sm text-ink/50">Καμία επίσκεψη ακόμα.</p>
+          {(!visits || visits.length === 0) && history.length === 0 && (
+            <p className="py-4 text-sm text-ink/50">Καμία δραστηριότητα ακόμα.</p>
           )}
           {visits?.map((visit) => (
-            <div key={visit.id} className="flex items-center justify-between py-2.5">
-              <span className="text-sm text-ink">
-                {visit.scheduled_date || visit.completed_date
-                  ? formatDateGR(visit.scheduled_date ?? visit.completed_date!)
-                  : "—"}
-              </span>
+            <div key={`visit-${visit.id}`} className="flex items-center justify-between gap-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <path d="M8 3v4M16 3v4M3 10h18" />
+                  </svg>
+                </span>
+                <span className="text-sm text-ink">
+                  {visit.scheduled_date || visit.completed_date
+                    ? formatDateGR(visit.scheduled_date ?? visit.completed_date!)
+                    : "—"}
+                </span>
+              </div>
               <Badge tone={visit.status === "completed" ? "success" : "neutral"}>
                 {VISIT_STATUS_LABEL[visit.status]}
               </Badge>
             </div>
           ))}
         </div>
+        {manager && history.length > 0 && (
+          <>
+            <p className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-ink/40">
+              Αλλαγές στοιχείων
+            </p>
+            <ActivityHistory entries={history} />
+          </>
+        )}
       </Card>
-
-      {manager && (
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle>Ιστορικό αλλαγών</CardTitle>
-          </CardHeader>
-          <ActivityHistory entries={history} />
-        </Card>
-      )}
 
       {manager && (
         <div className="mt-4 flex justify-end">
