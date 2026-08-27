@@ -15,6 +15,25 @@ import type {
 
 const RATING_CPO_VALUES: RatingCpo[] = ["0", "1", "2", "3", "ΥΔ"];
 
+/**
+ * Μόνο σε ΚΟΙΝΟΧΡΗΣΤΟ νοσοκομείο (is_shared, π.χ. Σύγγρος) μηδενίζεται ο
+ * υπεύθυνος rep όταν οριστεί "Νοσοκομείο" — στα υπόλοιπα είναι απλώς
+ * ετικέτα χώρου εργασίας πάνω στον ίδιο τον rep του γιατρού (ίδια λογική
+ * με hospitals/actions.ts, migration 0026).
+ */
+async function isSharedInstitution(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  institution: string | null,
+): Promise<boolean> {
+  if (!institution) return false;
+  const { data } = await supabase
+    .from("institutions")
+    .select("is_shared")
+    .eq("name", institution)
+    .maybeSingle();
+  return data?.is_shared ?? false;
+}
+
 const str = (formData: FormData, key: string) => {
   const v = formData.get(key);
   return typeof v === "string" && v.trim() !== "" ? v.trim() : null;
@@ -78,7 +97,8 @@ export async function createDoctor(formData: FormData) {
   }
 
   const institution = manager ? str(formData, "institution") : null;
-  const currentRepId = institution ? null : (str(formData, "current_rep_id") ?? profile.id);
+  const institutionIsShared = await isSharedInstitution(supabase, institution);
+  const currentRepId = institutionIsShared ? null : (str(formData, "current_rep_id") ?? profile.id);
   const status: DoctorStatus = manager
     ? ((str(formData, "status") as DoctorStatus) ?? "pending_approval")
     : "pending_approval";
@@ -148,7 +168,8 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
   }
 
   const institution = str(formData, "institution");
-  const currentRepId = institution ? null : str(formData, "current_rep_id");
+  const institutionIsShared = await isSharedInstitution(supabase, institution);
+  const currentRepId = institutionIsShared ? null : str(formData, "current_rep_id");
 
   const { error } = await supabase
     .from("doctors")
