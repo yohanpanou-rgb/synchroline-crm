@@ -34,6 +34,25 @@ async function isSharedInstitution(
   return data?.is_shared ?? false;
 }
 
+/** Προτείνει brick βάσει ταχυδρομικού κώδικα (#40), για client-side auto-fill. */
+export async function lookupBrickByPostalCode(
+  postalCode: string,
+): Promise<{ brickCode: string; brickName: string | null; city: string | null } | null> {
+  await requireProfile();
+  if (!postalCode.trim()) return null;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("postal_code_bricks")
+    .select("brick_code, city, bricks(name)")
+    .eq("postal_code", postalCode.trim())
+    .maybeSingle();
+
+  if (!data?.brick_code) return null;
+  const brickName = (data.bricks as unknown as { name: string | null } | null)?.name ?? null;
+  return { brickCode: data.brick_code, brickName, city: data.city };
+}
+
 const str = (formData: FormData, key: string) => {
   const v = formData.get(key);
   return typeof v === "string" && v.trim() !== "" ? v.trim() : null;
@@ -130,6 +149,7 @@ export async function createDoctor(formData: FormData) {
       address: str(formData, "address"),
       notes: str(formData, "notes"),
       hq_type: str(formData, "hq_type") as HqType | null,
+      postal_code: str(formData, "postal_code"),
     })
     .select("id")
     .single();
@@ -193,6 +213,7 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
       address: str(formData, "address"),
       notes: str(formData, "notes"),
       hq_type: str(formData, "hq_type") as HqType | null,
+      postal_code: str(formData, "postal_code"),
       current_rep_id: currentRepId ?? null,
       brick_code: brickCode ?? null,
       institution: institution ?? null,

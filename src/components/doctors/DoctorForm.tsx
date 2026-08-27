@@ -3,6 +3,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { ACADEMIC_TITLES } from "@/lib/constants/academic-titles";
+import { PostalCodeBrickFields } from "@/components/doctors/PostalCodeBrickFields";
 import type { Database } from "@/lib/types/database.types";
 
 type Doctor = Database["public"]["Tables"]["doctors"]["Row"];
@@ -203,14 +204,10 @@ export function DoctorForm({
         <h3 className="mb-3 text-sm font-semibold text-primary-dark">
           Brick (IMS/IQVIA)
         </h3>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Κωδικός brick">
-            <Input name="brick_code" defaultValue={doctor?.brick_code ?? ""} />
-          </Field>
-          <Field label="Όνομα brick">
-            <Input name="brick_name" placeholder="προαιρετικό" />
-          </Field>
-        </div>
+        <PostalCodeBrickFields
+          defaultPostalCode={doctor?.postal_code}
+          defaultBrickCode={doctor?.brick_code}
+        />
       </div>
 
       <Field label="Κατάσταση">

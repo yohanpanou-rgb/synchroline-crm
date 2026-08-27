@@ -104,6 +104,7 @@ export interface Database {
           institution: string | null;
           academic_title: string | null;
           is_candela_client: boolean;
+          postal_code: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -138,6 +139,7 @@ export interface Database {
           institution: string | null;
           academic_title: string | null;
           is_candela_client: boolean;
+          postal_code: string | null;
         }> & {
           last_name: string;
           first_name: string;
@@ -175,6 +177,7 @@ export interface Database {
           institution: string | null;
           academic_title: string | null;
           is_candela_client: boolean;
+          postal_code: string | null;
         }>;
         Relationships: [
           {
@@ -610,6 +613,27 @@ export interface Database {
         Update: Partial<{
           name: string;
           is_shared: boolean;
+        }>;
+        Relationships: [];
+      };
+      postal_code_bricks: {
+        Row: {
+          postal_code: string;
+          city: string | null;
+          brick_code: string | null;
+          county: string | null;
+        };
+        Insert: {
+          postal_code: string;
+          city?: string | null;
+          brick_code?: string | null;
+          county?: string | null;
+        };
+        Update: Partial<{
+          postal_code: string;
+          city: string | null;
+          brick_code: string | null;
+          county: string | null;
         }>;
         Relationships: [];
       };
