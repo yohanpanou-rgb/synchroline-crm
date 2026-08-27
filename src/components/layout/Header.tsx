@@ -1,6 +1,7 @@
 import { signOut, setViewRole } from "@/app/(app)/actions";
 import { Badge } from "@/components/ui/Badge";
 import { LogoutIcon } from "@/components/ui/icons";
+import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import type { UserRole } from "@/lib/types/database.types";
 import type { ProfileWithViewRole } from "@/lib/supabase/profile";
 
@@ -20,6 +21,8 @@ export function Header({ profile }: { profile: ProfileWithViewRole }) {
           Synchroline
         </span>
       </div>
+
+      <GlobalSearch />
 
       <div className="ml-auto flex items-center gap-3">
         <div className="hidden text-right sm:block">
