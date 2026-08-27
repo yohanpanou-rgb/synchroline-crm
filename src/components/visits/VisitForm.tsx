@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { TIME_SLOTS } from "@/lib/constants/schedule";
 import { DoctorCombobox } from "@/components/visits/DoctorCombobox";
+import { COMPETITOR_BRANDS, COMPETITOR_CATEGORIES } from "@/lib/constants/competitors";
 import type { ProductName, VisitStatus, VisitType } from "@/lib/types/database.types";
 
 interface DoctorOption {
@@ -71,6 +72,7 @@ export function VisitForm({
   visit,
   doctorName,
   products,
+  existingCompetitors,
   submitLabel = "Καταχώρηση επίσκεψης",
 }: {
   action: (formData: FormData) => void | Promise<void>;
@@ -85,6 +87,7 @@ export function VisitForm({
   visit?: VisitFormValues;
   doctorName?: string;
   products?: Partial<Record<ProductName, { samples_given: number; notes: string | null }>>;
+  existingCompetitors?: { category: string; competitorName: string }[];
   submitLabel?: string;
 }) {
   const isEdit = !!visit;
@@ -94,6 +97,27 @@ export function VisitForm({
   function addTemplate(phrase: string) {
     setNotes((prev) => (prev.trim() ? `${prev.trim()}. ${phrase}` : phrase));
   }
+
+  const [competitorCategory, setCompetitorCategory] = useState(
+    existingCompetitors?.[0]?.category ?? "",
+  );
+  const [competitorBrands, setCompetitorBrands] = useState<Set<string>>(
+    new Set(existingCompetitors?.map((c) => c.competitorName) ?? []),
+  );
+  const [competitorOther, setCompetitorOther] = useState(
+    existingCompetitors?.find((c) => !COMPETITOR_BRANDS.includes(c.competitorName as never))
+      ?.competitorName ?? "",
+  );
+
+  function toggleBrand(brand: string) {
+    setCompetitorBrands((prev) => {
+      const next = new Set(prev);
+      if (next.has(brand)) next.delete(brand);
+      else next.add(brand);
+      return next;
+    });
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   const scheduledDefault = visit?.scheduled_date ?? defaultDate ?? today;
   const completedDefault = visit?.completed_date ?? visit?.scheduled_date ?? today;
@@ -241,6 +265,57 @@ export function VisitForm({
             </div>
           ))}
         </div>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-sm font-semibold text-primary-dark">
+          Ανταγωνισμός
+        </h3>
+        <input type="hidden" name="competitor_category" value={competitorCategory} />
+        <input type="hidden" name="competitor_brands" value={[...competitorBrands].join(",")} />
+        <Field label="Κατηγορία πάθησης">
+          <Select
+            value={competitorCategory}
+            onChange={(e) => setCompetitorCategory(e.target.value)}
+          >
+            <option value="">— Καμία —</option>
+            {COMPETITOR_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        {competitorCategory && (
+          <div className="mt-3">
+            <p className="mb-1.5 text-sm font-medium text-ink">
+              Ποια ανταγωνιστικά προϊόντα χρησιμοποιεί/ανέφερε ο γιατρός;
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {COMPETITOR_BRANDS.map((brand) => (
+                <button
+                  key={brand}
+                  type="button"
+                  onClick={() => toggleBrand(brand)}
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                    competitorBrands.has(brand)
+                      ? "bg-primary text-white"
+                      : "bg-ink/5 text-ink/60 hover:bg-ink/10"
+                  }`}
+                >
+                  {brand}
+                </button>
+              ))}
+            </div>
+            <Input
+              name="competitor_other"
+              value={competitorOther}
+              onChange={(e) => setCompetitorOther(e.target.value)}
+              placeholder="Άλλο (προαιρετικό)"
+              className="mt-2"
+            />
+          </div>
+        )}
       </div>
 
       {cycleName && (

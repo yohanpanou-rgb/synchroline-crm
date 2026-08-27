@@ -41,6 +41,15 @@ export default async function EditVisitPage({
     (productRows ?? []).map((p) => [p.product_name, { samples_given: p.samples_given, notes: p.notes }]),
   ) as Partial<Record<ProductName, { samples_given: number; notes: string | null }>>;
 
+  const { data: competitorRows } = await supabase
+    .from("visit_competitor_mentions")
+    .select("category, competitor_name")
+    .eq("visit_id", id);
+  const existingCompetitors = (competitorRows ?? []).map((c) => ({
+    category: c.category,
+    competitorName: c.competitor_name,
+  }));
+
   const reps = manager ? await getAssignableReps(supabase) : undefined;
   const history = manager ? await getRecordHistory(supabase, "visits", id) : [];
 
@@ -79,6 +88,7 @@ export default async function EditVisitPage({
             location_context: visit.location_context,
           }}
           products={products}
+          existingCompetitors={existingCompetitors}
           cycleId={visit.cycle_id}
           cycleName={visit.cycles?.name}
           submitLabel="Αποθήκευση"

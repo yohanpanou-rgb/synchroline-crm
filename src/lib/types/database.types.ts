@@ -637,6 +637,25 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      visit_competitor_mentions: {
+        Row: {
+          id: string;
+          visit_id: string;
+          category: string;
+          competitor_name: string;
+          created_at: string;
+        };
+        Insert: {
+          visit_id: string;
+          category: string;
+          competitor_name: string;
+        };
+        Update: Partial<{
+          category: string;
+          competitor_name: string;
+        }>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

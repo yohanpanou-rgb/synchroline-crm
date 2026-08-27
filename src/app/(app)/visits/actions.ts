@@ -39,6 +39,34 @@ async function upsertProducts(
     .upsert(productRows, { onConflict: "visit_id,product_name" });
 }
 
+/** Ανταγωνισμός ανά κατηγορία πάθησης (#38) — αντικαθιστά πλήρως τις προηγούμενες καταχωρήσεις της επίσκεψης. */
+async function upsertCompetitorMentions(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  visitId: string,
+  formData: FormData,
+) {
+  await supabase.from("visit_competitor_mentions").delete().eq("visit_id", visitId);
+
+  const category = str(formData, "competitor_category");
+  if (!category) return;
+
+  const brands = (str(formData, "competitor_brands") ?? "")
+    .split(",")
+    .map((b) => b.trim())
+    .filter(Boolean);
+  const other = str(formData, "competitor_other");
+  if (other) brands.push(other);
+  if (brands.length === 0) return;
+
+  await supabase.from("visit_competitor_mentions").insert(
+    brands.map((competitor_name) => ({
+      visit_id: visitId,
+      category,
+      competitor_name,
+    })),
+  );
+}
+
 export async function createVisit(formData: FormData) {
   const profile = await requireProfile();
   const supabase = await createClient();
@@ -78,6 +106,7 @@ export async function createVisit(formData: FormData) {
   }
 
   await upsertProducts(supabase, visit.id, formData);
+  await upsertCompetitorMentions(supabase, visit.id, formData);
 
   revalidatePath("/visits");
   revalidatePath("/visits/calendar");
@@ -113,6 +142,7 @@ export async function updateVisit(visitId: string, formData: FormData) {
   }
 
   await upsertProducts(supabase, visitId, formData);
+  await upsertCompetitorMentions(supabase, visitId, formData);
 
   revalidatePath("/visits");
   revalidatePath("/visits/calendar");
