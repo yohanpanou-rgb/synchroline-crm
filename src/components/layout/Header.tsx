@@ -2,6 +2,7 @@ import { signOut, setViewRole } from "@/app/(app)/actions";
 import { Badge } from "@/components/ui/Badge";
 import { LogoutIcon } from "@/components/ui/icons";
 import { GlobalSearch } from "@/components/layout/GlobalSearch";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import type { UserRole } from "@/lib/types/database.types";
 import type { ProfileWithViewRole } from "@/lib/supabase/profile";
 
@@ -11,7 +12,21 @@ const ROLE_LABEL: Record<UserRole, string> = {
   admin: "Admin",
 };
 
-export function Header({ profile }: { profile: ProfileWithViewRole }) {
+interface NotificationRow {
+  id: string;
+  message: string;
+  link: string | null;
+  is_read: boolean;
+  created_at: string;
+}
+
+export function Header({
+  profile,
+  notifications = [],
+}: {
+  profile: ProfileWithViewRole;
+  notifications?: NotificationRow[];
+}) {
   const canSwitchView = profile.realRole === "manager" || profile.realRole === "admin";
 
   return (
@@ -51,6 +66,8 @@ export function Header({ profile }: { profile: ProfileWithViewRole }) {
         ) : (
           <Badge tone="neutral">{ROLE_LABEL[profile.role]}</Badge>
         )}
+
+        <NotificationBell notifications={notifications} />
 
         <form action={signOut}>
           <button

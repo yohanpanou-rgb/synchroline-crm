@@ -67,6 +67,39 @@ async function upsertCompetitorMentions(
   );
 }
 
+/** Ειδοποιεί όλους τους managers/admin (#13) όταν το κουτάκι "Ειδοποίηση manager" είναι τσεκαρισμένο. */
+async function notifyManagersIfFlagged(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  visitId: string,
+  formData: FormData,
+  actorId: string,
+) {
+  if (formData.get("notify_manager") !== "on") return;
+
+  const { data: managers } = await supabase
+    .from("profiles")
+    .select("id")
+    .in("role", ["manager", "admin"])
+    .neq("id", actorId);
+
+  if (!managers || managers.length === 0) return;
+
+  const { data: actor } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", actorId)
+    .maybeSingle();
+
+  await supabase.from("notifications").insert(
+    managers.map((m) => ({
+      user_id: m.id,
+      message: `${actor?.full_name ?? "Ένας rep"} σε επισήμανε σε επίσκεψη: ${str(formData, "notes") ?? ""}`.slice(0, 300),
+      link: `/visits/${visitId}/edit`,
+      created_by: actorId,
+    })),
+  );
+}
+
 export async function createVisit(formData: FormData) {
   const profile = await requireProfile();
   const supabase = await createClient();
@@ -107,6 +140,7 @@ export async function createVisit(formData: FormData) {
 
   await upsertProducts(supabase, visit.id, formData);
   await upsertCompetitorMentions(supabase, visit.id, formData);
+  await notifyManagersIfFlagged(supabase, visit.id, formData, profile.id);
 
   revalidatePath("/visits");
   revalidatePath("/visits/calendar");
@@ -143,6 +177,7 @@ export async function updateVisit(visitId: string, formData: FormData) {
 
   await upsertProducts(supabase, visitId, formData);
   await upsertCompetitorMentions(supabase, visitId, formData);
+  await notifyManagersIfFlagged(supabase, visitId, formData, profile.id);
 
   revalidatePath("/visits");
   revalidatePath("/visits/calendar");

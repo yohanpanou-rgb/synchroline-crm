@@ -656,6 +656,27 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          message: string;
+          link: string | null;
+          is_read: boolean;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          message: string;
+          link?: string | null;
+          created_by?: string | null;
+        };
+        Update: Partial<{
+          is_read: boolean;
+        }>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

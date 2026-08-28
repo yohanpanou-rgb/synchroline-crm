@@ -236,6 +236,10 @@ export function VisitForm({
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
+        <label className="mt-2 flex items-center gap-2 text-xs text-ink/60">
+          <input type="checkbox" name="notify_manager" className="h-4 w-4 rounded border-black/20" />
+          Ειδοποίηση manager — χρειάζεται προσοχή
+        </label>
       </Field>
 
       <div>

@@ -83,3 +83,27 @@ export async function globalSearch(query: string): Promise<GlobalSearchResult[]>
   }
   return results;
 }
+
+/** Σημειώνει μία ειδοποίηση ως αναγνωσμένη (#13). */
+export async function markNotificationRead(id: string) {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+  await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("id", id)
+    .eq("user_id", profile.id);
+  revalidatePath("/", "layout");
+}
+
+/** Σημειώνει όλες τις ειδοποιήσεις του τρέχοντος χρήστη ως αναγνωσμένες. */
+export async function markAllNotificationsRead() {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+  await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("user_id", profile.id)
+    .eq("is_read", false);
+  revalidatePath("/", "layout");
+}
