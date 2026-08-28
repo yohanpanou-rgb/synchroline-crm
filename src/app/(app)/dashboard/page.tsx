@@ -275,6 +275,41 @@ export default async function DashboardPage({
           </Card>
         </div>
 
+        {repsMetrics.length > 1 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Κατάταξη reps — κάλυψη κύκλου</CardTitle>
+            </CardHeader>
+            <div className="divide-y divide-black/5">
+              {[...repsMetrics]
+                .sort((a, b) => b.coveragePct - a.coveragePct)
+                .map((m, i) => (
+                  <div key={m.repId} className="flex items-center justify-between gap-3 py-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                          i === 0
+                            ? "bg-warning/20 text-warning"
+                            : i === 1
+                              ? "bg-ink/10 text-ink/60"
+                              : i === 2
+                                ? "bg-danger/10 text-danger"
+                                : "bg-ink/5 text-ink/40"
+                        }`}
+                      >
+                        {i + 1}
+                      </span>
+                      <span className="text-sm font-medium text-ink">{m.repName}</span>
+                    </div>
+                    <span className="tabular-nums text-sm text-ink/60">
+                      {m.coveragePct.toFixed(0)}%
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Κάλυψη ανά rep</CardTitle>
