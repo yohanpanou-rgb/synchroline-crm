@@ -13,6 +13,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/visits/calendar", label: "Ημερολόγιο" },
   { href: "/pharmacies", label: "Φαρμακεία" },
   { href: "/hospitals", label: "Νοσοκομεία" },
+  { href: "/reports", label: "Αναφορές", roles: ["admin", "manager"] },
   { href: "/sales", label: "Πωλήσεις" },
   { href: "/cycles", label: "Κύκλοι", roles: ["admin", "manager"] },
 ];

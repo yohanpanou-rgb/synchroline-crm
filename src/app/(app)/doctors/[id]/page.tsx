@@ -91,6 +91,15 @@ export default async function DoctorDetailPage({
     avgIntervalDays = Math.round(gaps.reduce((s, g) => s + g, 0) / gaps.length);
   }
 
+  const currentYear = new Date().getFullYear();
+  const { count: visitsThisYear } = await supabase
+    .from("visits")
+    .select("id", { count: "exact", head: true })
+    .eq("doctor_id", id)
+    .eq("status", "completed")
+    .gte("completed_date", `${currentYear}-01-01`)
+    .lte("completed_date", `${currentYear}-12-31`);
+
   const reps = await getAssignableReps(supabase);
   const institutions = await getInstitutionsList(supabase);
   const history = manager ? await getRecordHistory(supabase, "doctors", id) : [];
@@ -143,26 +152,30 @@ export default async function DoctorDetailPage({
         />
       </Card>
 
-      {(daysSinceLastVisit !== null || avgIntervalDays !== null) && (
-        <div className="mb-4 grid grid-cols-2 gap-3">
-          {daysSinceLastVisit !== null && (
-            <Card>
-              <p className="text-xs font-medium text-ink/50">Τελευταία επίσκεψη</p>
-              <p className="mt-1 text-lg font-semibold text-primary-dark">
-                {daysSinceLastVisit === 0 ? "Σήμερα" : `πριν ${daysSinceLastVisit} μέρες`}
-              </p>
-            </Card>
-          )}
-          {avgIntervalDays !== null && (
-            <Card>
-              <p className="text-xs font-medium text-ink/50">Μέση συχνότητα</p>
-              <p className="mt-1 text-lg font-semibold text-primary-dark">
-                κάθε {avgIntervalDays} μέρες
-              </p>
-            </Card>
-          )}
-        </div>
-      )}
+      <div className="mb-4 grid grid-cols-2 gap-3">
+        {daysSinceLastVisit !== null && (
+          <Card>
+            <p className="text-xs font-medium text-ink/50">Τελευταία επίσκεψη</p>
+            <p className="mt-1 text-lg font-semibold text-primary-dark">
+              {daysSinceLastVisit === 0 ? "Σήμερα" : `πριν ${daysSinceLastVisit} μέρες`}
+            </p>
+          </Card>
+        )}
+        {avgIntervalDays !== null && (
+          <Card>
+            <p className="text-xs font-medium text-ink/50">Μέση συχνότητα</p>
+            <p className="mt-1 text-lg font-semibold text-primary-dark">
+              κάθε {avgIntervalDays} μέρες
+            </p>
+          </Card>
+        )}
+        <Card className="col-span-2">
+          <p className="text-xs font-medium text-ink/50">Επισκέψεις το {currentYear}</p>
+          <p className="mt-1 text-lg font-semibold text-primary-dark">
+            {visitsThisYear ?? 0}
+          </p>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader>

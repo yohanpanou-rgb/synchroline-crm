@@ -14,6 +14,7 @@ import {
   type RepRatingMetrics,
 } from "@/lib/queries/rating";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { CollapsibleCard } from "@/components/ui/CollapsibleCard";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PacingBar } from "@/components/dashboard/PacingBar";
@@ -448,10 +449,7 @@ export default async function DashboardPage({
           </div>
         </Card>
 
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Αξιολόγηση Πελατολογίου ανά Νομό</CardTitle>
-          </CardHeader>
+        <CollapsibleCard title="Αξιολόγηση Πελατολογίου ανά Νομό" defaultOpen={false} className="mt-6">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">
               <thead>
@@ -495,7 +493,7 @@ export default async function DashboardPage({
               </tbody>
             </table>
           </div>
-        </Card>
+        </CollapsibleCard>
 
         <Card className="mt-6">
           <CardHeader>
