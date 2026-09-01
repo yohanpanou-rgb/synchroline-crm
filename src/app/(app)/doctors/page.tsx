@@ -48,24 +48,40 @@ export default async function DoctorsPage({
     .is("institution", null)
     .order("last_name", { ascending: true });
 
+  // Ίδια βάση φίλτρων (χωρίς rating) — χρησιμοποιείται και για τα counts στα chips.
+  let countQuery = supabase
+    .from("doctors")
+    .select("rating_cpo")
+    .is("institution", null);
+
   if (q) {
     query = query.or(`last_name.ilike.%${q}%,first_name.ilike.%${q}%`);
+    countQuery = countQuery.or(`last_name.ilike.%${q}%,first_name.ilike.%${q}%`);
   }
   if (rating) {
     query = query.eq("rating_cpo", rating as RatingCpo);
   }
   if (region) {
     query = query.eq("region", region);
+    countQuery = countQuery.eq("region", region);
   }
   if (manager && rep) {
     query = query.eq("current_rep_id", rep);
+    countQuery = countQuery.eq("current_rep_id", rep);
   }
 
-  const [{ data: doctors }, { data: regionRows }, reps] = await Promise.all([
+  const [{ data: doctors }, { data: ratingRows }, { data: regionRows }, reps] = await Promise.all([
     query,
+    countQuery,
     supabase.from("doctors").select("region"),
     manager ? getAssignableReps(supabase) : Promise.resolve([]),
   ]);
+
+  const ratingCounts = new Map<string, number>();
+  for (const r of ratingRows ?? []) {
+    ratingCounts.set(r.rating_cpo, (ratingCounts.get(r.rating_cpo) ?? 0) + 1);
+  }
+  const totalCount = ratingRows?.length ?? 0;
 
   const repsById = new Map(reps.map((r) => [r.id, r.full_name]));
 
@@ -119,7 +135,7 @@ export default async function DoctorsPage({
             !rating ? "bg-primary-dark text-white" : "bg-ink/5 text-ink/60 hover:bg-ink/10",
           )}
         >
-          Όλοι
+          Όλοι ({totalCount})
         </Link>
         {RATING_CPO_OPTIONS.map((opt) => (
           <Link
@@ -133,7 +149,7 @@ export default async function DoctorsPage({
                 : "bg-ink/5 text-ink/60 hover:bg-ink/10",
             )}
           >
-            {opt.label}
+            {opt.label} ({ratingCounts.get(opt.value) ?? 0})
           </Link>
         ))}
       </div>
