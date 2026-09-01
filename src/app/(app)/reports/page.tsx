@@ -6,6 +6,9 @@ import { getDataEntryQuality, getCompetitorMentionStats, getHospitalCoverageRepo
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { HospitalCoverageAccordion } from "@/components/reports/HospitalCoverageAccordion";
+import { AiInsightsPanel } from "@/components/reports/AiInsightsPanel";
+
+export const maxDuration = 30;
 
 export default async function ReportsPage() {
   const profile = await requireProfile();
@@ -26,6 +29,13 @@ export default async function ReportsPage() {
       <p className="mb-6 text-sm text-ink/50">
         {cycle ? `Τρέχων κύκλος: ${cycle.name}` : "Δεν υπάρχει ενεργός κύκλος."}
       </p>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>AI Σύνοψη</CardTitle>
+        </CardHeader>
+        <AiInsightsPanel />
+      </Card>
 
       <Card className="mb-6">
         <CardHeader>
