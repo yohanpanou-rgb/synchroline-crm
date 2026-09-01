@@ -26,7 +26,7 @@ export default async function VisitsPage() {
   const { data: visits } = await supabase
     .from("visits")
     .select(
-      "*, doctors(last_name, first_name), institutions(name), profiles!visits_rep_id_fkey(full_name)",
+      "*, doctors!visits_doctor_id_fkey(last_name, first_name), institutions(name), profiles!visits_rep_id_fkey(full_name)",
     )
     .order("scheduled_date", { ascending: false })
     .limit(50);

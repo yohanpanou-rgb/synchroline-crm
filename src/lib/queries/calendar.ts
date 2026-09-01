@@ -27,7 +27,7 @@ export async function getVisitsInRange(
   let query = supabase
     .from("visits")
     .select(
-      "id, doctor_id, hospital_id, scheduled_date, scheduled_time, status, doctors(last_name, first_name, region, county), institutions(name), profiles!visits_rep_id_fkey(full_name)",
+      "id, doctor_id, hospital_id, scheduled_date, scheduled_time, status, doctors!visits_doctor_id_fkey(last_name, first_name, region, county), institutions(name), profiles!visits_rep_id_fkey(full_name)",
     )
     .in("status", ["planned", "completed"])
     .gte("scheduled_date", startISO)

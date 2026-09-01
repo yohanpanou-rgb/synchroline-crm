@@ -26,7 +26,7 @@ export default async function EditVisitPage({
 
   const { data: visit } = await supabase
     .from("visits")
-    .select("*, doctors(last_name, first_name), institutions(id, name), cycles(name)")
+    .select("*, doctors!visits_doctor_id_fkey(last_name, first_name), institutions(id, name), cycles(name)")
     .eq("id", id)
     .maybeSingle();
 
