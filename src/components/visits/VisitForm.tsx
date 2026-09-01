@@ -20,6 +20,11 @@ interface RepOption {
   id: string;
   full_name: string;
 }
+interface HospitalOption {
+  id: string;
+  name: string;
+  doctors: { id: string; last_name: string; first_name: string }[];
+}
 
 const PRODUCTS = [
   { key: "aknicare", label: "Aknicare" },
@@ -39,7 +44,8 @@ const NOTE_TEMPLATES = [
 ];
 
 export interface VisitFormValues {
-  doctor_id: string;
+  doctor_id: string | null;
+  hospital_id?: string | null;
   rep_id: string;
   visit_type: VisitType;
   status: VisitStatus;
@@ -63,6 +69,7 @@ export function VisitForm({
   action,
   doctors,
   reps,
+  hospitals,
   defaultDoctorId,
   defaultDate,
   defaultTime,
@@ -71,6 +78,8 @@ export function VisitForm({
   cycleName,
   visit,
   doctorName,
+  hospitalName,
+  selectedHospitalDoctorIds,
   products,
   existingCompetitors,
   submitLabel = "Καταχώρηση επίσκεψης",
@@ -78,6 +87,7 @@ export function VisitForm({
   action: (formData: FormData) => void | Promise<void>;
   doctors: DoctorOption[];
   reps?: RepOption[];
+  hospitals?: HospitalOption[];
   defaultDoctorId?: string;
   defaultDate?: string;
   defaultTime?: string;
@@ -86,6 +96,8 @@ export function VisitForm({
   cycleName?: string;
   visit?: VisitFormValues;
   doctorName?: string;
+  hospitalName?: string;
+  selectedHospitalDoctorIds?: string[];
   products?: Partial<Record<ProductName, { samples_given: number; notes: string | null }>>;
   existingCompetitors?: { category: string; competitorName: string }[];
   submitLabel?: string;
@@ -93,6 +105,23 @@ export function VisitForm({
   const isEdit = !!visit;
   const [status, setStatus] = useState<VisitStatus>(visit?.status ?? defaultStatus ?? "planned");
   const [notes, setNotes] = useState(visit?.notes ?? "");
+  const [locationType, setLocationType] = useState<"doctor" | "hospital">(
+    visit?.hospital_id ? "hospital" : "doctor",
+  );
+  const [hospitalId, setHospitalId] = useState(visit?.hospital_id ?? "");
+  const [checkedDoctorIds, setCheckedDoctorIds] = useState<Set<string>>(
+    new Set(selectedHospitalDoctorIds ?? []),
+  );
+  const selectedHospital = (hospitals ?? []).find((h) => h.id === hospitalId);
+
+  function toggleDoctorChecked(doctorId: string) {
+    setCheckedDoctorIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(doctorId)) next.delete(doctorId);
+      else next.add(doctorId);
+      return next;
+    });
+  }
 
   function addTemplate(phrase: string) {
     setNotes((prev) => (prev.trim() ? `${prev.trim()}. ${phrase}` : phrase));
@@ -129,17 +158,125 @@ export function VisitForm({
       <div className="grid gap-4 sm:grid-cols-2">
         {isEdit ? (
           <div className="sm:col-span-2">
-            <Field label="Γιατρός">
-              <input type="hidden" name="doctor_id" value={visit.doctor_id} />
+            <Field label={locationType === "hospital" ? "Νοσοκομείο" : "Γιατρός"}>
+              <input
+                type="hidden"
+                name="doctor_id"
+                value={locationType === "doctor" ? (visit.doctor_id ?? "") : ""}
+              />
+              <input
+                type="hidden"
+                name="hospital_id"
+                value={locationType === "hospital" ? (visit.hospital_id ?? "") : ""}
+              />
               <p className="flex h-11 items-center text-sm font-medium text-ink">
-                {doctorName ?? "—"}
+                {locationType === "hospital" ? (hospitalName ?? "—") : (doctorName ?? "—")}
               </p>
             </Field>
+            {locationType === "hospital" && selectedHospital && (
+              <div className="mt-2">
+                <p className="mb-1.5 text-sm font-medium text-ink">
+                  Γιατροί που είδες σε αυτή την επίσκεψη
+                </p>
+                <div className="space-y-1.5 rounded-xl border border-black/10 p-2">
+                  {selectedHospital.doctors.map((d) => (
+                    <label key={d.id} className="flex items-center gap-2 text-sm text-ink">
+                      <input
+                        type="checkbox"
+                        name="hospital_doctor_ids"
+                        value={d.id}
+                        checked={checkedDoctorIds.has(d.id)}
+                        onChange={() => toggleDoctorChecked(d.id)}
+                        className="h-4 w-4 rounded border-black/20"
+                      />
+                      {d.last_name} {d.first_name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <Field label="Γιατρός">
-            <DoctorCombobox name="doctor_id" doctors={doctors} defaultDoctorId={defaultDoctorId} />
-          </Field>
+          <div className="sm:col-span-2 space-y-3">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setLocationType("doctor")}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                  locationType === "doctor"
+                    ? "bg-primary text-white"
+                    : "bg-ink/5 text-ink/60 hover:bg-ink/10"
+                }`}
+              >
+                Επίσκεψη σε Γιατρό
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocationType("hospital")}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                  locationType === "hospital"
+                    ? "bg-primary text-white"
+                    : "bg-ink/5 text-ink/60 hover:bg-ink/10"
+                }`}
+              >
+                Επίσκεψη σε Νοσοκομείο
+              </button>
+            </div>
+
+            {locationType === "doctor" ? (
+              <Field label="Γιατρός">
+                <DoctorCombobox name="doctor_id" doctors={doctors} defaultDoctorId={defaultDoctorId} />
+              </Field>
+            ) : (
+              <>
+                <Field label="Νοσοκομείο">
+                  <Select
+                    name="hospital_id"
+                    value={hospitalId}
+                    onChange={(e) => {
+                      setHospitalId(e.target.value);
+                      setCheckedDoctorIds(new Set());
+                    }}
+                  >
+                    <option value="">— Επίλεξε νοσοκομείο —</option>
+                    {(hospitals ?? []).map((h) => (
+                      <option key={h.id} value={h.id}>
+                        {h.name}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                {selectedHospital && (
+                  <div>
+                    <p className="mb-1.5 text-sm font-medium text-ink">
+                      Γιατροί που είδες σε αυτή την επίσκεψη
+                    </p>
+                    {selectedHospital.doctors.length === 0 ? (
+                      <p className="text-sm text-ink/50">
+                        Δεν υπάρχουν ακόμα γιατροί σε αυτό το νοσοκομείο.
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5 rounded-xl border border-black/10 p-2">
+                        {selectedHospital.doctors.map((d) => (
+                          <label key={d.id} className="flex items-center gap-2 text-sm text-ink">
+                            <input
+                              type="checkbox"
+                              name="hospital_doctor_ids"
+                              value={d.id}
+                              checked={checkedDoctorIds.has(d.id)}
+                              onChange={() => toggleDoctorChecked(d.id)}
+                              className="h-4 w-4 rounded border-black/20"
+                            />
+                            {d.last_name} {d.first_name}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         )}
 
         {reps && (

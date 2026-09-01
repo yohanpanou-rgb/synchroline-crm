@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { getActiveCycle } from "@/lib/queries/dashboard";
 import { getAssignableReps } from "@/lib/queries/reps";
+import { getInstitutionGroups } from "@/lib/queries/institutions";
 import { Card } from "@/components/ui/Card";
 import { BackButton } from "@/components/ui/BackButton";
 import { VisitForm } from "@/components/visits/VisitForm";
@@ -33,11 +34,22 @@ export default async function NewVisitPage({
     doctorsQuery = doctorsQuery.eq("current_rep_id", profile.id);
   }
 
-  const [{ data: doctors }, cycle, reps] = await Promise.all([
+  const [{ data: doctors }, cycle, reps, hospitalGroups] = await Promise.all([
     doctorsQuery,
     getActiveCycle(supabase),
     manager ? getAssignableReps(supabase) : Promise.resolve(null),
+    getInstitutionGroups(supabase, manager ? undefined : profile.id),
   ]);
+
+  const hospitals = hospitalGroups.map((g) => ({
+    id: g.id,
+    name: g.name,
+    doctors: g.doctors.map((d) => ({
+      id: d.id,
+      last_name: d.last_name,
+      first_name: d.first_name,
+    })),
+  }));
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -64,6 +76,7 @@ export default async function NewVisitPage({
           action={createVisit}
           doctors={doctors ?? []}
           reps={manager ? (reps ?? []) : undefined}
+          hospitals={hospitals}
           defaultDoctorId={doctorId}
           defaultDate={date}
           defaultTime={time}

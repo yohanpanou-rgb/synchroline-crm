@@ -67,6 +67,22 @@ async function upsertCompetitorMentions(
   );
 }
 
+async function upsertHospitalDoctors(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  visitId: string,
+  formData: FormData,
+) {
+  const doctorIds = formData.getAll("hospital_doctor_ids").filter(
+    (v): v is string => typeof v === "string" && v.trim() !== "",
+  );
+  await supabase.from("visit_hospital_doctors").delete().eq("visit_id", visitId);
+  if (doctorIds.length > 0) {
+    await supabase
+      .from("visit_hospital_doctors")
+      .insert(doctorIds.map((doctor_id) => ({ visit_id: visitId, doctor_id })));
+  }
+}
+
 /** Ειδοποιεί όλους τους managers/admin (#13) όταν το κουτάκι "Ειδοποίηση manager" είναι τσεκαρισμένο. */
 async function notifyManagersIfFlagged(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -106,11 +122,12 @@ export async function createVisit(formData: FormData) {
   const manager = isManagerOrAdmin(profile.role);
 
   const doctorId = str(formData, "doctor_id");
+  const hospitalId = str(formData, "hospital_id");
   const cycleId = str(formData, "cycle_id");
   const repId = (manager && str(formData, "rep_id")) || profile.id;
 
-  if (!doctorId || !cycleId) {
-    redirect(`/visits/new?error=${encodeURIComponent("Επίλεξε γιατρό και κύκλο.")}`);
+  if ((!doctorId && !hospitalId) || !cycleId) {
+    redirect(`/visits/new?error=${encodeURIComponent("Επίλεξε γιατρό ή νοσοκομείο, και κύκλο.")}`);
   }
 
   const status = (str(formData, "status") as VisitStatus) ?? "planned";
@@ -118,7 +135,8 @@ export async function createVisit(formData: FormData) {
   const { data: visit, error } = await supabase
     .from("visits")
     .insert({
-      doctor_id: doctorId!,
+      doctor_id: doctorId,
+      hospital_id: hospitalId,
       rep_id: repId,
       cycle_id: cycleId!,
       visit_type: (str(formData, "visit_type") as VisitType) ?? "normal",
@@ -140,11 +158,13 @@ export async function createVisit(formData: FormData) {
 
   await upsertProducts(supabase, visit.id, formData);
   await upsertCompetitorMentions(supabase, visit.id, formData);
+  if (hospitalId) await upsertHospitalDoctors(supabase, visit.id, formData);
   await notifyManagersIfFlagged(supabase, visit.id, formData, profile.id);
 
   revalidatePath("/visits");
   revalidatePath("/visits/calendar");
-  revalidatePath(`/doctors/${doctorId}`);
+  if (doctorId) revalidatePath(`/doctors/${doctorId}`);
+  if (hospitalId) revalidatePath("/hospitals");
   redirect("/visits");
 }
 
@@ -154,6 +174,7 @@ export async function updateVisit(visitId: string, formData: FormData) {
   const manager = isManagerOrAdmin(profile.role);
 
   const doctorId = str(formData, "doctor_id");
+  const hospitalId = str(formData, "hospital_id");
   const repId = (manager && str(formData, "rep_id")) || profile.id;
   const status = (str(formData, "status") as VisitStatus) ?? "planned";
 
@@ -177,11 +198,13 @@ export async function updateVisit(visitId: string, formData: FormData) {
 
   await upsertProducts(supabase, visitId, formData);
   await upsertCompetitorMentions(supabase, visitId, formData);
+  if (hospitalId) await upsertHospitalDoctors(supabase, visitId, formData);
   await notifyManagersIfFlagged(supabase, visitId, formData, profile.id);
 
   revalidatePath("/visits");
   revalidatePath("/visits/calendar");
-  revalidatePath(`/doctors/${doctorId}`);
+  if (doctorId) revalidatePath(`/doctors/${doctorId}`);
+  if (hospitalId) revalidatePath("/hospitals");
   redirect("/visits");
 }
 

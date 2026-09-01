@@ -44,11 +44,10 @@ export async function searchAssignableDoctors(query: string): Promise<DoctorSear
 }
 
 /**
- * Ανάθεση γιατρού σε νοσοκομείο. Μόνο σε ΚΟΙΝΟΧΡΗΣΤΟ νοσοκομείο (π.χ. Σύγγρος
- * — is_shared) αφαιρείται από το προσωπικό πελατολόγιο (current_rep_id).
- * Στα υπόλοιπα το "Νοσοκομείο" είναι απλώς ετικέτα χώρου εργασίας — ο
- * γιατρός παραμένει στον ίδιο rep (feedback Σάββα: η γενίκευση σε
- * "Νοσοκομεία" έκανε λάθος όλα κοινόχρηστα).
+ * Ανάθεση γιατρού σε νοσοκομείο. Ο γιατρός αφαιρείται πάντα από το προσωπικό
+ * πελατολόγιο/KPI (current_rep_id = null) — η ορατότητά του πλέον καθορίζεται
+ * αποκλειστικά από την ανάθεση του ΝΟΣΟΚΟΜΕΙΟΥ σε reps (institution_reps),
+ * όχι από προσωπική ιδιοκτησία γιατρού. Ισχύει για όλα τα νοσοκομεία, κοινόχρηστα ή μη.
  */
 export async function assignDoctorToInstitution(
   doctorId: string,
@@ -57,30 +56,21 @@ export async function assignDoctorToInstitution(
   await requireProfile();
   const supabase = await createClient();
 
-  const { data: inst } = await supabase
-    .from("institutions")
-    .select("is_shared")
-    .eq("name", institution)
-    .maybeSingle();
-  const isShared = inst?.is_shared ?? false;
-
   const { error } = await supabase
     .from("doctors")
-    .update(isShared ? { institution, current_rep_id: null } : { institution })
+    .update({ institution, current_rep_id: null })
     .eq("id", doctorId);
   if (error) return { error: error.message };
 
-  if (isShared) {
-    const today = new Date().toISOString().slice(0, 10);
-    const { data: openAssignment } = await supabase
-      .from("territory_assignments")
-      .select("id")
-      .eq("doctor_id", doctorId)
-      .is("valid_to", null)
-      .maybeSingle();
-    if (openAssignment) {
-      await supabase.from("territory_assignments").update({ valid_to: today }).eq("id", openAssignment.id);
-    }
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: openAssignment } = await supabase
+    .from("territory_assignments")
+    .select("id")
+    .eq("doctor_id", doctorId)
+    .is("valid_to", null)
+    .maybeSingle();
+  if (openAssignment) {
+    await supabase.from("territory_assignments").update({ valid_to: today }).eq("id", openAssignment.id);
   }
 
   revalidatePath("/hospitals");
@@ -89,37 +79,51 @@ export async function assignDoctorToInstitution(
   return {};
 }
 
+/** Αναθέτει ένα νοσοκομείο σε ένα ή περισσότερους reps (πολλαπλή ανάθεση). Μόνο manager/admin. */
+export async function setInstitutionReps(
+  institutionId: string,
+  repIds: string[],
+): Promise<{ error?: string }> {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+
+  const { error: deleteError } = await supabase
+    .from("institution_reps")
+    .delete()
+    .eq("institution_id", institutionId);
+  if (deleteError) return { error: deleteError.message };
+
+  if (repIds.length > 0) {
+    const { error: insertError } = await supabase
+      .from("institution_reps")
+      .insert(repIds.map((repId) => ({ institution_id: institutionId, rep_id: repId })));
+    if (insertError) return { error: insertError.message };
+  }
+
+  revalidatePath("/hospitals");
+  return {};
+}
+
 /**
- * Αφαιρεί γιατρό από νοσοκομείο. Αν ήταν κοινόχρηστο (current_rep_id ήταν
- * ήδη null), ξαναγίνεται προσωπικό πελατολόγιο ανατιθέμενος σε όποιον rep
- * έκανε την αφαίρεση. Αν δεν ήταν κοινόχρηστο, ο υπεύθυνος rep δεν άλλαζε
- * ποτέ — απλώς αφαιρείται η ετικέτα.
+ * Αφαιρεί γιατρό από νοσοκομείο — ξαναγίνεται προσωπικό πελατολόγιο,
+ * ανατιθέμενος σε όποιον rep έκανε την αφαίρεση.
  */
 export async function removeDoctorFromInstitution(doctorId: string): Promise<{ error?: string }> {
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const { data: doctor } = await supabase
-    .from("doctors")
-    .select("current_rep_id")
-    .eq("id", doctorId)
-    .maybeSingle();
-  const wasUnowned = !doctor?.current_rep_id;
-
   const { error } = await supabase
     .from("doctors")
-    .update(wasUnowned ? { institution: null, current_rep_id: profile.id } : { institution: null })
+    .update({ institution: null, current_rep_id: profile.id })
     .eq("id", doctorId);
   if (error) return { error: error.message };
 
-  if (wasUnowned) {
-    await supabase.from("territory_assignments").insert({
-      doctor_id: doctorId,
-      rep_id: profile.id,
-      valid_from: new Date().toISOString().slice(0, 10),
-      created_by: profile.id,
-    });
-  }
+  await supabase.from("territory_assignments").insert({
+    doctor_id: doctorId,
+    rep_id: profile.id,
+    valid_from: new Date().toISOString().slice(0, 10),
+    created_by: profile.id,
+  });
 
   revalidatePath("/hospitals");
   revalidatePath(`/doctors/${doctorId}`);

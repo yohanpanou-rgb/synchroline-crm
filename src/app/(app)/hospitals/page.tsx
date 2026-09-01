@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { getInstitutionGroups } from "@/lib/queries/institutions";
+import { getAssignableReps } from "@/lib/queries/reps";
 import { HospitalAccordion } from "@/components/hospitals/HospitalAccordion";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -16,7 +17,10 @@ export default async function HospitalsPage({
   const profile = await requireProfile();
   const manager = isManagerOrAdmin(profile.role);
   const supabase = await createClient();
-  const groups = await getInstitutionGroups(supabase, manager ? undefined : profile.id);
+  const [groups, reps] = await Promise.all([
+    getInstitutionGroups(supabase, manager ? undefined : profile.id),
+    getAssignableReps(supabase),
+  ]);
   const { error } = await searchParams;
 
   async function handleCreateInstitution(formData: FormData) {
@@ -34,10 +38,9 @@ export default async function HospitalsPage({
         Νοσοκομεία
       </h1>
       <p className="mb-6 text-sm text-ink/50">
-        Ομαδοποίηση γιατρών ανά νοσοκομείο. Μόνο τα κοινόχρηστα νοσοκομεία
-        (π.χ. Σύγγρος) δεν ανήκουν στο προσωπικό πελατολόγιο κανενός rep — τα
-        υπόλοιπα είναι απλώς ετικέτα χώρου εργασίας πάνω στους δικούς σου
-        γιατρούς.
+        Ομαδοποίηση γιατρών ανά νοσοκομείο. Οι νοσοκομειακοί γιατροί δεν
+        μετράνε στο προσωπικό πελατολόγιο/KPI κανενός rep — η ορατότητα ενός
+        νοσοκομείου καθορίζεται από την ανάθεσή του σε συγκεκριμένο(ους) rep.
       </p>
 
       {error && (
@@ -60,7 +63,7 @@ export default async function HospitalsPage({
           Δεν υπάρχουν ακόμα νοσοκομεία.
         </p>
       ) : (
-        <HospitalAccordion groups={groups} />
+        <HospitalAccordion groups={groups} manager={manager} reps={reps} />
       )}
     </div>
   );

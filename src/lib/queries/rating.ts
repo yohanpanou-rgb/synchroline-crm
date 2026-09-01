@@ -34,7 +34,8 @@ export async function getRepRatingMetrics(
     .from("doctors")
     .select("id, rating_cpo")
     .eq("current_rep_id", repId)
-    .eq("status", "active");
+    .eq("status", "active")
+    .is("institution", null);
 
   const rows = doctors ?? [];
   const total = rows.length;

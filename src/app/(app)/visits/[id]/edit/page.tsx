@@ -26,11 +26,25 @@ export default async function EditVisitPage({
 
   const { data: visit } = await supabase
     .from("visits")
-    .select("*, doctors(last_name, first_name), cycles(name)")
+    .select("*, doctors(last_name, first_name), institutions(id, name), cycles(name)")
     .eq("id", id)
     .maybeSingle();
 
   if (!visit) notFound();
+
+  let hospitalDoctors: { id: string; last_name: string; first_name: string }[] = [];
+  let selectedHospitalDoctorIds: string[] = [];
+  if (visit.hospital_id) {
+    const [{ data: hdRows }, { data: linkRows }] = await Promise.all([
+      supabase
+        .from("doctors")
+        .select("id, last_name, first_name")
+        .eq("institution", visit.institutions?.name ?? ""),
+      supabase.from("visit_hospital_doctors").select("doctor_id").eq("visit_id", id),
+    ]);
+    hospitalDoctors = hdRows ?? [];
+    selectedHospitalDoctorIds = (linkRows ?? []).map((r) => r.doctor_id);
+  }
 
   const { data: productRows } = await supabase
     .from("visit_products")
@@ -76,8 +90,16 @@ export default async function EditVisitPage({
               ? formatDoctorName(visit.doctors.last_name, visit.doctors.first_name)
               : undefined
           }
+          hospitalName={visit.institutions?.name ?? undefined}
+          hospitals={
+            visit.hospital_id
+              ? [{ id: visit.hospital_id, name: visit.institutions?.name ?? "", doctors: hospitalDoctors }]
+              : undefined
+          }
+          selectedHospitalDoctorIds={selectedHospitalDoctorIds}
           visit={{
             doctor_id: visit.doctor_id,
+            hospital_id: visit.hospital_id,
             rep_id: visit.rep_id,
             visit_type: visit.visit_type,
             status: visit.status,

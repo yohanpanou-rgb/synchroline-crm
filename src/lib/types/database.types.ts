@@ -315,7 +315,8 @@ export interface Database {
       visits: {
         Row: {
           id: string;
-          doctor_id: string;
+          doctor_id: string | null;
+          hospital_id: string | null;
           rep_id: string;
           cycle_id: string;
           visit_type: VisitType;
@@ -329,6 +330,8 @@ export interface Database {
           updated_at: string;
         };
         Insert: Partial<{
+          doctor_id: string | null;
+          hospital_id: string | null;
           visit_type: VisitType;
           status: VisitStatus;
           scheduled_date: string | null;
@@ -337,12 +340,12 @@ export interface Database {
           notes: string | null;
           location_context: string | null;
         }> & {
-          doctor_id: string;
           rep_id: string;
           cycle_id: string;
         };
         Update: Partial<{
-          doctor_id: string;
+          doctor_id: string | null;
+          hospital_id: string | null;
           rep_id: string;
           cycle_id: string;
           visit_type: VisitType;
@@ -362,6 +365,13 @@ export interface Database {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "visits_hospital_id_fkey";
+            columns: ["hospital_id"];
+            isOneToOne: false;
+            referencedRelation: "institutions";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "visits_rep_id_fkey";
             columns: ["rep_id"];
             isOneToOne: false;
@@ -373,6 +383,36 @@ export interface Database {
             columns: ["cycle_id"];
             isOneToOne: false;
             referencedRelation: "cycles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      visit_hospital_doctors: {
+        Row: {
+          visit_id: string;
+          doctor_id: string;
+        };
+        Insert: {
+          visit_id: string;
+          doctor_id: string;
+        };
+        Update: Partial<{
+          visit_id: string;
+          doctor_id: string;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "visit_hospital_doctors_visit_id_fkey";
+            columns: ["visit_id"];
+            isOneToOne: false;
+            referencedRelation: "visits";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "visit_hospital_doctors_doctor_id_fkey";
+            columns: ["doctor_id"];
+            isOneToOne: false;
+            referencedRelation: "doctors";
             referencedColumns: ["id"];
           },
         ];
@@ -615,6 +655,37 @@ export interface Database {
           is_shared: boolean;
         }>;
         Relationships: [];
+      };
+      institution_reps: {
+        Row: {
+          institution_id: string;
+          rep_id: string;
+          created_at: string;
+        };
+        Insert: {
+          institution_id: string;
+          rep_id: string;
+        };
+        Update: Partial<{
+          institution_id: string;
+          rep_id: string;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "institution_reps_institution_id_fkey";
+            columns: ["institution_id"];
+            isOneToOne: false;
+            referencedRelation: "institutions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "institution_reps_rep_id_fkey";
+            columns: ["rep_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       postal_code_bricks: {
         Row: {

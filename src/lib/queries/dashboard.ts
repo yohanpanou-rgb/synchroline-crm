@@ -37,7 +37,8 @@ export async function getRepMetrics(
     .select("id", { count: "exact", head: true })
     .eq("current_rep_id", repId)
     .eq("status", "active")
-    .neq("rating_cpo", "0");
+    .neq("rating_cpo", "0")
+    .is("institution", null);
 
   if (!cycle) {
     return {

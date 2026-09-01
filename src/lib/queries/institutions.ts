@@ -6,8 +6,10 @@ type Cycle = Database["public"]["Tables"]["cycles"]["Row"];
 type Doctor = Database["public"]["Tables"]["doctors"]["Row"];
 
 export interface InstitutionGroup {
+  id: string;
   name: string;
   isShared: boolean;
+  repIds: string[];
   doctors: Doctor[];
 }
 
@@ -21,26 +23,39 @@ export async function getInstitutionsList(supabase: Client): Promise<string[]> {
  * Όλα τα νοσοκομεία από τον κατάλογο, με τους γιατρούς τους (άδεια λίστα αν
  * δεν έχει ανατεθεί ακόμα κανείς) — έτσι ένα νοσοκομείο εμφανίζεται στη
  * λίστα ακόμα κι αν δεν έχει γιατρούς ακόμα. Αν δοθεί `onlyRelevantToRepId`,
- * επιστρέφονται μόνο τα κοινόχρηστα (is_shared) νοσοκομεία και όσα έχουν
- * τουλάχιστον έναν γιατρό του συγκεκριμένου rep (feedback Σάββα, #4).
+ * επιστρέφονται μόνο τα νοσοκομεία ανατεθειμένα στον συγκεκριμένο rep
+ * (institution_reps) — ή, αν δεν έχει ανατεθεί ρητά κανένας rep ακόμα, τα
+ * κοινόχρηστα (is_shared), ώστε να μη χαθεί ορατότητα μέχρι να γίνει ανάθεση.
  */
 export async function getInstitutionGroups(
   supabase: Client,
   onlyRelevantToRepId?: string,
 ): Promise<InstitutionGroup[]> {
-  const [{ data: institutions }, { data: doctors }] = await Promise.all([
-    supabase.from("institutions").select("name, is_shared").order("name"),
+  const [{ data: institutions }, { data: doctors }, { data: assignments }] = await Promise.all([
+    supabase.from("institutions").select("id, name, is_shared").order("name"),
     supabase
       .from("doctors")
       .select("*")
       .not("institution", "is", null)
       .order("last_name", { ascending: true }),
+    supabase.from("institution_reps").select("institution_id, rep_id"),
   ]);
 
-  const sharedByName = new Map<string, boolean>();
+  const repIdsByInstitutionId = new Map<string, string[]>();
+  for (const a of assignments ?? []) {
+    const arr = repIdsByInstitutionId.get(a.institution_id) ?? [];
+    arr.push(a.rep_id);
+    repIdsByInstitutionId.set(a.institution_id, arr);
+  }
+
+  const infoByName = new Map<string, { id: string; isShared: boolean; repIds: string[] }>();
   const byName = new Map<string, Doctor[]>();
   for (const inst of institutions ?? []) {
-    sharedByName.set(inst.name, inst.is_shared);
+    infoByName.set(inst.name, {
+      id: inst.id,
+      isShared: inst.is_shared,
+      repIds: repIdsByInstitutionId.get(inst.id) ?? [],
+    });
     byName.set(inst.name, []);
   }
   for (const d of doctors ?? []) {
@@ -50,15 +65,20 @@ export async function getInstitutionGroups(
     byName.set(name, arr);
   }
 
-  let groups = [...byName.entries()].map(([name, docs]) => ({
-    name,
-    isShared: sharedByName.get(name) ?? false,
-    doctors: docs,
-  }));
+  let groups = [...byName.entries()].map(([name, docs]) => {
+    const info = infoByName.get(name);
+    return {
+      id: info?.id ?? name,
+      name,
+      isShared: info?.isShared ?? false,
+      repIds: info?.repIds ?? [],
+      doctors: docs,
+    };
+  });
 
   if (onlyRelevantToRepId) {
-    groups = groups.filter(
-      (g) => g.isShared || g.doctors.some((d) => d.current_rep_id === onlyRelevantToRepId),
+    groups = groups.filter((g) =>
+      g.repIds.length > 0 ? g.repIds.includes(onlyRelevantToRepId) : g.isShared,
     );
   }
 

@@ -45,6 +45,7 @@ export default async function DoctorsPage({
   let query = supabase
     .from("doctors")
     .select("*")
+    .is("institution", null)
     .order("last_name", { ascending: true });
 
   if (q) {
@@ -75,9 +76,18 @@ export default async function DoctorsPage({
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-5 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-primary-dark">
-          Πελατολόγιο
-        </h1>
+        <div>
+          <h1 className="text-xl font-semibold text-primary-dark">
+            Πελατολόγιο — Ιδιωτικοί Γιατροί
+          </h1>
+          <p className="mt-0.5 text-xs text-ink/50">
+            Νοσοκομειακοί γιατροί εμφανίζονται στα{" "}
+            <Link href="/hospitals" className="text-primary hover:underline">
+              Νοσοκομεία
+            </Link>
+            .
+          </p>
+        </div>
         <div className="flex flex-wrap justify-end gap-2">
           <a href="/api/doctors/export">
             <Button variant="secondary" size="md">Εξαγωγή Excel</Button>

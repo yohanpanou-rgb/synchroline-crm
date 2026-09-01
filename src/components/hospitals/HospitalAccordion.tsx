@@ -5,20 +5,44 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DoctorCard } from "@/components/doctors/DoctorCard";
 import { AssignDoctorWidget } from "@/components/hospitals/AssignDoctorWidget";
-import { removeDoctorFromInstitution } from "@/app/(app)/hospitals/actions";
+import { removeDoctorFromInstitution, setInstitutionReps } from "@/app/(app)/hospitals/actions";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
 import type { InstitutionGroup } from "@/lib/queries/institutions";
 import { cn } from "@/lib/utils/cn";
 
-export function HospitalAccordion({ groups }: { groups: InstitutionGroup[] }) {
+interface RepOption {
+  id: string;
+  full_name: string;
+}
+
+export function HospitalAccordion({
+  groups,
+  manager,
+  reps,
+}: {
+  groups: InstitutionGroup[];
+  manager: boolean;
+  reps: RepOption[];
+}) {
   const [openName, setOpenName] = useState<string | null>(groups[0]?.name ?? null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const repsById = new Map(reps.map((r) => [r.id, r.full_name]));
 
   function handleRemove(doctorId: string, doctorName: string) {
     if (!window.confirm(`Αφαίρεση του "${doctorName}" από το νοσοκομείο;`)) return;
     startTransition(async () => {
       await removeDoctorFromInstitution(doctorId);
+      router.refresh();
+    });
+  }
+
+  function toggleRep(institutionId: string, currentRepIds: string[], repId: string) {
+    const next = currentRepIds.includes(repId)
+      ? currentRepIds.filter((id) => id !== repId)
+      : [...currentRepIds, repId];
+    startTransition(async () => {
+      await setInstitutionReps(institutionId, next);
       router.refresh();
     });
   }
@@ -55,6 +79,42 @@ export function HospitalAccordion({ groups }: { groups: InstitutionGroup[] }) {
             </button>
             {isOpen && (
               <div className="space-y-3 border-t border-black/5 p-3">
+                <div className="rounded-xl bg-ink/5 p-2">
+                  <p className="mb-1.5 text-xs font-medium text-ink/60">
+                    Ανατεθειμένο σε:
+                  </p>
+                  {manager ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {reps.map((rep) => {
+                        const active = group.repIds.includes(rep.id);
+                        return (
+                          <button
+                            key={rep.id}
+                            type="button"
+                            disabled={isPending}
+                            onClick={() => toggleRep(group.id, group.repIds, rep.id)}
+                            className={cn(
+                              "rounded-full px-2.5 py-1 text-xs font-medium disabled:opacity-50",
+                              active
+                                ? "bg-primary text-white"
+                                : "bg-white text-ink/60 hover:bg-ink/10",
+                            )}
+                          >
+                            {rep.full_name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-ink">
+                      {group.repIds.length > 0
+                        ? group.repIds.map((id) => repsById.get(id) ?? "—").join(", ")
+                        : group.isShared
+                          ? "Κοινόχρηστο — ορατό σε όλους"
+                          : "Δεν έχει ανατεθεί ακόμα σε συγκεκριμένο rep"}
+                    </p>
+                  )}
+                </div>
                 <div className="flex flex-wrap items-center gap-2 rounded-xl bg-ink/5 p-2">
                   <div className="min-w-[220px] flex-1">
                     <AssignDoctorWidget institution={group.name} />
