@@ -5,7 +5,8 @@ type Client = SupabaseClient<Database>;
 
 export interface CalendarVisit {
   id: string;
-  doctor_id: string;
+  doctor_id: string | null;
+  hospital_id: string | null;
   scheduled_date: string;
   scheduled_time: string | null;
   status: Database["public"]["Tables"]["visits"]["Row"]["status"];
@@ -15,6 +16,7 @@ export interface CalendarVisit {
     region: string | null;
     county: string | null;
   } | null;
+  hospital: { name: string } | null;
   rep: { full_name: string } | null;
 }
 
@@ -25,7 +27,7 @@ export async function getVisitsInRange(
   let query = supabase
     .from("visits")
     .select(
-      "id, doctor_id, scheduled_date, scheduled_time, status, doctors(last_name, first_name, region, county), profiles!visits_rep_id_fkey(full_name)",
+      "id, doctor_id, hospital_id, scheduled_date, scheduled_time, status, doctors(last_name, first_name, region, county), institutions(name), profiles!visits_rep_id_fkey(full_name)",
     )
     .in("status", ["planned", "completed"])
     .gte("scheduled_date", startISO)
@@ -42,10 +44,12 @@ export async function getVisitsInRange(
   return (data ?? []).map((v) => ({
     id: v.id,
     doctor_id: v.doctor_id,
+    hospital_id: v.hospital_id,
     scheduled_date: v.scheduled_date!,
     scheduled_time: v.scheduled_time,
     status: v.status,
     doctor: v.doctors,
+    hospital: v.institutions,
     rep: v.profiles,
   }));
 }

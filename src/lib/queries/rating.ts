@@ -60,7 +60,7 @@ export async function getRepRatingMetrics(
     const visitedActive = new Set(
       (visits ?? [])
         .map((v) => v.doctor_id)
-        .filter((id) => activeIds.has(id)),
+        .filter((id): id is string => !!id && activeIds.has(id)),
     );
     activeCoveragePct = (visitedActive.size / activeCount) * 100;
   }

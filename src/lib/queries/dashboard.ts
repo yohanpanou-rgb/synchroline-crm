@@ -76,8 +76,9 @@ export async function getRepMetrics(
         .maybeSingle(),
     ]);
 
-  const coveredCount = new Set((completedVisits ?? []).map((v) => v.doctor_id))
-    .size;
+  const coveredCount = new Set(
+    (completedVisits ?? []).map((v) => v.doctor_id).filter((id): id is string => !!id),
+  ).size;
   const size = territorySize ?? 0;
   const coveragePct = size > 0 ? (coveredCount / size) * 100 : 0;
 

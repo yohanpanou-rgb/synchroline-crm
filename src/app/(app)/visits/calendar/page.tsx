@@ -37,14 +37,24 @@ function groupBySlot(visits: CalendarVisit[]) {
 
 function VisitChip({ visit }: { visit: CalendarVisit }) {
   const completed = visit.status === "completed";
+  const chipClassName = cn(
+    "block truncate rounded-md px-1.5 py-0.5 text-[11px] leading-tight hover:opacity-80",
+    completed ? "bg-success/15 text-success" : "bg-primary/10 text-primary-dark",
+  );
+
+  if (!visit.doctor_id) {
+    return (
+      <a href={`/visits/${visit.id}/edit`} className={chipClassName}>
+        <p className="truncate font-medium">🏥 {visit.hospital?.name ?? "—"}</p>
+      </a>
+    );
+  }
+
   return (
     <DoctorHoverCard
       doctorId={visit.doctor_id}
       href={`/visits/${visit.id}/edit`}
-      className={cn(
-        "block truncate rounded-md px-1.5 py-0.5 text-[11px] leading-tight hover:opacity-80",
-        completed ? "bg-success/15 text-success" : "bg-primary/10 text-primary-dark",
-      )}
+      className={chipClassName}
     >
       <p className="truncate font-medium">
         {visit.doctor
@@ -403,24 +413,33 @@ async function MonthView({ supabase, anchor, repId, manager, repParam }: ViewPro
                         </Link>
                         {dayVisits.length > 0 && (
                           <div className="mt-1 space-y-0.5">
-                            {dayVisits.slice(0, 2).map((v) => (
-                              <DraggableVisit key={v.id} visitId={v.id}>
-                                <DoctorHoverCard
-                                  doctorId={v.doctor_id}
-                                  href={`/visits/${v.id}/edit`}
-                                  className={cn(
-                                    "block truncate rounded px-1 py-0.5 text-[10px] leading-tight",
-                                    v.status === "completed"
-                                      ? "bg-success/15 text-success"
-                                      : "bg-primary/10 text-primary-dark",
+                            {dayVisits.slice(0, 2).map((v) => {
+                              const chipClassName = cn(
+                                "block truncate rounded px-1 py-0.5 text-[10px] leading-tight",
+                                v.status === "completed"
+                                  ? "bg-success/15 text-success"
+                                  : "bg-primary/10 text-primary-dark",
+                              );
+                              return (
+                                <DraggableVisit key={v.id} visitId={v.id}>
+                                  {v.doctor_id ? (
+                                    <DoctorHoverCard
+                                      doctorId={v.doctor_id}
+                                      href={`/visits/${v.id}/edit`}
+                                      className={chipClassName}
+                                    >
+                                      {v.doctor
+                                        ? formatDoctorName(v.doctor.last_name, v.doctor.first_name)
+                                        : "—"}
+                                    </DoctorHoverCard>
+                                  ) : (
+                                    <a href={`/visits/${v.id}/edit`} className={chipClassName}>
+                                      🏥 {v.hospital?.name ?? "—"}
+                                    </a>
                                   )}
-                                >
-                                  {v.doctor
-                                    ? formatDoctorName(v.doctor.last_name, v.doctor.first_name)
-                                    : "—"}
-                                </DoctorHoverCard>
-                              </DraggableVisit>
-                            ))}
+                                </DraggableVisit>
+                              );
+                            })}
                             {dayVisits.length > 2 && (
                               <p className="px-1 text-[10px] text-ink/40">
                                 +{dayVisits.length - 2} ακόμα

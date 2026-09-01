@@ -25,7 +25,9 @@ export default async function VisitsPage() {
 
   const { data: visits } = await supabase
     .from("visits")
-    .select("*, doctors(last_name, first_name), profiles!visits_rep_id_fkey(full_name)")
+    .select(
+      "*, doctors(last_name, first_name), institutions(name), profiles!visits_rep_id_fkey(full_name)",
+    )
     .order("scheduled_date", { ascending: false })
     .limit(50);
 
@@ -57,13 +59,15 @@ export default async function VisitsPage() {
             className="flex items-center justify-between gap-3 rounded-2xl border border-black/5 bg-white p-4 shadow-sm hover:border-primary/30"
           >
             <Link
-              href={`/doctors/${visit.doctor_id}`}
+              href={visit.doctor_id ? `/doctors/${visit.doctor_id}` : "/hospitals"}
               className="min-w-0 flex-1"
             >
               <p className="truncate text-sm font-semibold text-ink">
                 {visit.doctors
                   ? formatDoctorName(visit.doctors.last_name, visit.doctors.first_name)
-                  : "—"}
+                  : visit.institutions
+                    ? `🏥 ${visit.institutions.name}`
+                    : "—"}
               </p>
               <p className="truncate text-xs text-ink/50">
                 {visit.profiles?.full_name} ·{" "}

@@ -107,6 +107,7 @@ export async function getRegionBreakdown(
     if (repId) visitsQuery = visitsQuery.eq("rep_id", repId);
     const { data: visits } = await visitsQuery;
     for (const v of visits ?? []) {
+      if (!v.doctor_id) continue;
       const region = regionByDoctorId.get(v.doctor_id);
       if (!region) continue;
       visitCountByRegion.set(region, (visitCountByRegion.get(region) ?? 0) + 1);
