@@ -35,42 +35,8 @@ import {
   getOverallSubBrandStats,
 } from "@/lib/queries/prescriptions";
 import { SubBrandBarChart } from "@/components/dashboard/SubBrandBarChart";
-import { getInstitutionVisitStats } from "@/lib/queries/institutions";
+import { getAllRepsHospitalMetrics, getRepHospitalMetrics } from "@/lib/queries/reports";
 import { computePacing } from "@/lib/utils/pacing";
-
-const SYGGROS_INSTITUTION = "ΣΥΓΓΡΟΣ";
-
-function SyggrosReportCard({
-  stats,
-  cycleName,
-}: {
-  stats: Awaited<ReturnType<typeof getInstitutionVisitStats>>;
-  cycleName: string | undefined;
-}) {
-  return (
-    <Card className="mt-6">
-      <CardHeader className="flex items-center justify-between">
-        <CardTitle>Σύγγρος{cycleName ? ` — ${cycleName}` : ""}</CardTitle>
-        <Link href="/hospitals" className="text-xs font-medium text-primary hover:underline">
-          Λίστα γιατρών
-        </Link>
-      </CardHeader>
-      <p className="mb-2 text-sm text-ink">
-        {stats.visitsThisCycle} επισκέψεις σε {stats.doctorCount} γιατρούς
-      </p>
-      {stats.byRep.length > 0 && (
-        <div className="space-y-1">
-          {stats.byRep.map((r) => (
-            <div key={r.repId} className="flex justify-between text-xs text-ink/60">
-              <span>{r.repName}</span>
-              <span className="tabular-nums">{r.count}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </Card>
-  );
-}
 import { getAssignableReps } from "@/lib/queries/reps";
 import { WEEKLY_PHARMACY_VISIT_TARGET } from "@/lib/constants/schedule";
 import { RATING_CPO_ALERT_THRESHOLD_PCT } from "@/lib/constants/rating";
@@ -201,7 +167,9 @@ export default async function DashboardPage({
     const countyRatingMetrics = await getCountyRatingMetrics(supabase);
     const prescriptionMetrics = await getAllRepsPrescriptionMetrics(supabase);
     const overallSubBrandStats = await getOverallSubBrandStats(supabase);
-    const syggrosStats = await getInstitutionVisitStats(supabase, SYGGROS_INSTITUTION, cycle);
+    const hospitalMetrics = await getAllRepsHospitalMetrics(supabase, cycle);
+    const hospitalMetricsByRepId = new Map(hospitalMetrics.map((m) => [m.repId, m]));
+    const totalHospitalDoctors = hospitalMetrics.reduce((s, m) => s + m.hospitalDoctorCount, 0);
     const ratingTotals = ratingMetricsRaw.reduce(
       (acc, r) => {
         acc.total += r.total;
@@ -540,7 +508,90 @@ export default async function DashboardPage({
           </div>
         </Card>
 
-        <SyggrosReportCard stats={syggrosStats} cycleName={cycle?.name} />
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Ιδιώτες vs Νοσοκομειακοί — ανά rep</CardTitle>
+          </CardHeader>
+          <p className="mb-3 text-xs text-ink/50">
+            Το coverage κάθε rep αξιολογείται πάνω στο ιδιωτικό πελατολόγιο — οι νοσοκομειακοί
+            γιατροί εμφανίζονται ξεχωριστά, χωρίς να το επηρεάζουν.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr className="border-b border-black/5 text-left text-xs text-ink/50">
+                  <th className="py-2 pr-3 font-medium">Rep</th>
+                  <th className="py-2 pr-3 font-medium">Ιδιώτες</th>
+                  <th className="py-2 pr-3 font-medium">Κάλυψη ιδιωτών</th>
+                  <th className="py-2 pr-3 font-medium">Νοσοκομειακοί</th>
+                  <th className="py-2 pr-3 font-medium">Κάλυψη νοσοκομείων</th>
+                  <th className="py-2 pr-3 font-medium">Σύνολο γιατρών</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/5">
+                {repsMetrics.map((m) => {
+                  const h = hospitalMetricsByRepId.get(m.repId);
+                  return (
+                    <tr key={m.repId}>
+                      <td className="py-2.5 pr-3 font-medium text-ink">{m.repName}</td>
+                      <td className="py-2.5 pr-3 tabular-nums text-ink/70">{m.territorySize}</td>
+                      <td className="py-2.5 pr-3 tabular-nums text-ink/70">
+                        {m.coveragePct.toFixed(0)}%
+                      </td>
+                      <td className="py-2.5 pr-3 tabular-nums text-ink/70">
+                        {h?.hospitalDoctorCount ?? 0}
+                      </td>
+                      <td className="py-2.5 pr-3 tabular-nums text-ink/70">
+                        {(h?.hospitalCoveragePct ?? 0).toFixed(0)}%
+                      </td>
+                      <td className="py-2.5 pr-3 tabular-nums font-medium text-ink">
+                        {m.territorySize + (h?.hospitalDoctorCount ?? 0)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-black/5 text-xs font-semibold text-ink">
+                  <td className="py-2 pr-3">Σύνολο</td>
+                  <td className="py-2 pr-3 tabular-nums">{totalDoctors}</td>
+                  <td className="py-2 pr-3" />
+                  <td className="py-2 pr-3 tabular-nums">{totalHospitalDoctors}</td>
+                  <td className="py-2 pr-3" />
+                  <td className="py-2 pr-3 tabular-nums">{totalDoctors + totalHospitalDoctors}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>Δραστηριότητα Νοσοκομείων ανά rep{cycle ? ` — ${cycle.name}` : ""}</CardTitle>
+            <Link href="/reports" className="text-xs font-medium text-primary hover:underline">
+              Πλήρης αναφορά
+            </Link>
+          </CardHeader>
+          <div className="divide-y divide-black/5">
+            {hospitalMetrics.length === 0 && (
+              <p className="py-4 text-sm text-ink/50">Δεν υπάρχουν reps.</p>
+            )}
+            {hospitalMetrics.map((h) => (
+              <div key={h.repId} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-ink">{h.repName}</p>
+                  <p className="text-xs text-ink/50">
+                    {h.hospitalDoctorsVisited}/{h.hospitalDoctorCount} γιατροί ·{" "}
+                    {h.hospitalVisitsThisCycle} επισκέψεις
+                  </p>
+                </div>
+                <span className="tabular-nums text-sm text-ink/60">
+                  {h.hospitalCoveragePct.toFixed(0)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
       </div>
     );
   }
@@ -559,7 +610,7 @@ export default async function DashboardPage({
   const visitTrend = await getVisitTrend(supabase, cycle, profile.id);
   const regionBreakdown = await getRegionBreakdown(supabase, cycle, profile.id);
   const prescriptionMetrics = await getRepPrescriptionMetrics(supabase, profile.id, profile.full_name);
-  const syggrosStats = await getInstitutionVisitStats(supabase, SYGGROS_INSTITUTION, cycle);
+  const hospitalMetrics = await getRepHospitalMetrics(supabase, profile.id, cycle);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -731,7 +782,51 @@ export default async function DashboardPage({
         )}
       </Card>
 
-      <SyggrosReportCard stats={syggrosStats} cycleName={cycle?.name} />
+      <Card className="mt-6">
+        <CardHeader className="flex items-center justify-between">
+          <CardTitle>Νοσοκομειακοί Γιατροί{cycle ? ` — ${cycle.name}` : ""}</CardTitle>
+          <Link href="/hospitals" className="text-xs font-medium text-primary hover:underline">
+            Λίστα
+          </Link>
+        </CardHeader>
+        {hospitalMetrics && hospitalMetrics.hospitalDoctorCount > 0 ? (
+          <>
+            <p className="mb-2 text-sm text-ink">
+              {hospitalMetrics.hospitalDoctorsVisited}/{hospitalMetrics.hospitalDoctorCount} γιατροί
+              καλύφθηκαν · {hospitalMetrics.hospitalVisitsThisCycle} επισκέψεις
+            </p>
+            <ProgressBar value={hospitalMetrics.hospitalCoveragePct} colorClassName="bg-primary" />
+          </>
+        ) : (
+          <p className="text-sm text-ink/50">Δεν σου έχει ανατεθεί κανένα νοσοκομείο.</p>
+        )}
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Σύνολο Πελατολογίου</CardTitle>
+        </CardHeader>
+        <div className="grid grid-cols-3 gap-3 text-center">
+          <div>
+            <p className="text-xs text-ink/50">Ιδιώτες</p>
+            <p className="mt-0.5 text-lg font-semibold tabular-nums text-primary-dark">
+              {metrics.territorySize}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-ink/50">Νοσοκομειακοί</p>
+            <p className="mt-0.5 text-lg font-semibold tabular-nums text-primary-dark">
+              {hospitalMetrics?.hospitalDoctorCount ?? 0}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-ink/50">Σύνολο</p>
+            <p className="mt-0.5 text-lg font-semibold tabular-nums text-primary-dark">
+              {metrics.territorySize + (hospitalMetrics?.hospitalDoctorCount ?? 0)}
+            </p>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

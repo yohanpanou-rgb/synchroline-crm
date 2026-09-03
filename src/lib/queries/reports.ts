@@ -281,3 +281,69 @@ export async function getHospitalCoverageReport(
     };
   });
 }
+
+export interface RepHospitalMetrics {
+  repId: string;
+  repName: string;
+  hospitalDoctorCount: number;
+  hospitalDoctorsVisited: number;
+  hospitalCoveragePct: number;
+  hospitalVisitsThisCycle: number;
+}
+
+/**
+ * Νοσοκομειακές μετρήσεις ανά rep — άθροισμα σε όλα τα νοσοκομεία που του
+ * έχουν ανατεθεί (institution_reps). Ξεχωριστό KPI από το ιδιωτικό
+ * πελατολόγιο (RepMetrics.territorySize), ώστε οι νοσοκομειακοί γιατροί να
+ * μην αλλοιώνουν το βασικό coverage του rep, αλλά να παραμένουν ορατοί.
+ */
+export async function getAllRepsHospitalMetrics(
+  supabase: Client,
+  cycle: Cycle | null,
+): Promise<RepHospitalMetrics[]> {
+  const [reps, coverage, { data: assignments }] = await Promise.all([
+    getAssignableReps(supabase),
+    getHospitalCoverageReport(supabase, cycle),
+    supabase.from("institution_reps").select("institution_id, rep_id"),
+  ]);
+
+  const repIdsByInstitutionId = new Map<string, string[]>();
+  for (const a of assignments ?? []) {
+    const arr = repIdsByInstitutionId.get(a.institution_id) ?? [];
+    arr.push(a.rep_id);
+    repIdsByInstitutionId.set(a.institution_id, arr);
+  }
+
+  return reps.map((rep) => {
+    let hospitalDoctorCount = 0;
+    let hospitalDoctorsVisited = 0;
+    let hospitalVisitsThisCycle = 0;
+
+    for (const entry of coverage) {
+      const assignedReps = repIdsByInstitutionId.get(entry.id) ?? [];
+      if (!assignedReps.includes(rep.id)) continue;
+      hospitalDoctorCount += entry.doctorCount;
+      hospitalDoctorsVisited += entry.coveredDoctors.length;
+      hospitalVisitsThisCycle += entry.byRep.find((r) => r.repId === rep.id)?.count ?? 0;
+    }
+
+    return {
+      repId: rep.id,
+      repName: rep.full_name,
+      hospitalDoctorCount,
+      hospitalDoctorsVisited,
+      hospitalCoveragePct:
+        hospitalDoctorCount > 0 ? (hospitalDoctorsVisited / hospitalDoctorCount) * 100 : 0,
+      hospitalVisitsThisCycle,
+    };
+  });
+}
+
+export async function getRepHospitalMetrics(
+  supabase: Client,
+  repId: string,
+  cycle: Cycle | null,
+): Promise<RepHospitalMetrics | undefined> {
+  const all = await getAllRepsHospitalMetrics(supabase, cycle);
+  return all.find((m) => m.repId === repId);
+}
