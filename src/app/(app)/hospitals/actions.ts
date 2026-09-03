@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/supabase/profile";
+import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
 
 export interface DoctorSearchResult {
@@ -76,6 +76,42 @@ export async function assignDoctorToInstitution(
   revalidatePath("/hospitals");
   revalidatePath(`/doctors/${doctorId}`);
   revalidatePath("/doctors");
+  return {};
+}
+
+/**
+ * Διαγράφει ένα νοσοκομείο. Μόνο manager/admin. Μπλοκάρεται αν έχει ακόμα
+ * γιατρούς ανατεθειμένους (πρέπει πρώτα να αφαιρεθούν) ή αν υπάρχουν
+ * επισκέψεις-νοσοκομείου καταχωρημένες σε αυτό (foreign key constraint).
+ */
+export async function deleteInstitution(
+  institutionId: string,
+  institutionName: string,
+): Promise<{ error?: string }> {
+  const profile = await requireProfile();
+  if (!isManagerOrAdmin(profile.role)) return { error: "Μη επιτρεπτή ενέργεια." };
+
+  const supabase = await createClient();
+
+  const { count: doctorCount } = await supabase
+    .from("doctors")
+    .select("id", { count: "exact", head: true })
+    .eq("institution", institutionName);
+  if (doctorCount && doctorCount > 0) {
+    return {
+      error: `Το νοσοκομείο έχει ακόμα ${doctorCount} ανατεθειμένους γιατρούς — αφαίρεσέ τους πρώτα.`,
+    };
+  }
+
+  const { error } = await supabase.from("institutions").delete().eq("id", institutionId);
+  if (error) {
+    if (error.code === "23503") {
+      return { error: "Δεν μπορεί να διαγραφεί — υπάρχουν καταχωρημένες επισκέψεις σε αυτό το νοσοκομείο." };
+    }
+    return { error: error.message };
+  }
+
+  revalidatePath("/hospitals");
   return {};
 }
 
