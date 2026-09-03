@@ -44,6 +44,11 @@ export function DoctorCard({
                 Candela
               </span>
             )}
+            {doctor.institution && (
+              <span className="ml-1.5 rounded bg-primary/10 px-1 py-0.5 text-[10px] font-medium text-primary">
+                🏥 {doctor.institution}
+              </span>
+            )}
           </p>
           {repName && (
             <p className="truncate text-xs text-ink/40">{repName}</p>

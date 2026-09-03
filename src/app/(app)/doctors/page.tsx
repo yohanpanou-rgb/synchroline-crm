@@ -42,17 +42,24 @@ export default async function DoctorsPage({
   const { q, rating, region, rep } = await searchParams;
   const supabase = await createClient();
 
-  let query = supabase
-    .from("doctors")
-    .select("*")
-    .is("institution", null)
-    .order("last_name", { ascending: true });
+  // Νοσοκομεία ανατεθειμένα στον επιλεγμένο rep (φίλτρου), ώστε το φίλτρο rep να
+  // δείχνει και τους νοσοκομειακούς γιατρούς του, όχι μόνο τους ιδιώτες.
+  let repHospitalNames: string[] = [];
+  if (manager && rep) {
+    const { data: repInstitutionRows } = await supabase
+      .from("institution_reps")
+      .select("institutions(name)")
+      .eq("rep_id", rep);
+    repHospitalNames = (repInstitutionRows ?? [])
+      .map((r) => r.institutions?.name)
+      .filter((n): n is string => !!n);
+  }
 
-  // Ίδια βάση φίλτρων (χωρίς rating) — χρησιμοποιείται και για τα counts στα chips.
-  let countQuery = supabase
-    .from("doctors")
-    .select("rating_cpo")
-    .is("institution", null);
+  let query = supabase.from("doctors").select("*").order("last_name", { ascending: true });
+
+  // Ίδια βάση φίλτρων (χωρίς rating), μόνο ιδιώτες — τα counts στα chips
+  // παραμένουν βάση αξιολόγησης του ιδιωτικού πελατολογίου (KPI).
+  let countQuery = supabase.from("doctors").select("rating_cpo").is("institution", null);
 
   if (q) {
     query = query.or(`last_name.ilike.%${q}%,first_name.ilike.%${q}%`);
@@ -66,7 +73,10 @@ export default async function DoctorsPage({
     countQuery = countQuery.eq("region", region);
   }
   if (manager && rep) {
-    query = query.eq("current_rep_id", rep);
+    query =
+      repHospitalNames.length > 0
+        ? query.or(`current_rep_id.eq.${rep},institution.in.(${repHospitalNames.map((n) => `"${n}"`).join(",")})`)
+        : query.eq("current_rep_id", rep);
     countQuery = countQuery.eq("current_rep_id", rep);
   }
 
@@ -94,10 +104,11 @@ export default async function DoctorsPage({
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-primary-dark">
-            Πελατολόγιο — Ιδιωτικοί Γιατροί
+            Πελατολόγιο
           </h1>
           <p className="mt-0.5 text-xs text-ink/50">
-            Νοσοκομειακοί γιατροί εμφανίζονται στα{" "}
+            Οι νοσοκομειακοί γιατροί (🏥) φαίνονται εδώ για πλήρη εικόνα, αλλά δεν μετράνε στα
+            KPI κάλυψης — διαχειρίσου τους από τα{" "}
             <Link href="/hospitals" className="text-primary hover:underline">
               Νοσοκομεία
             </Link>
