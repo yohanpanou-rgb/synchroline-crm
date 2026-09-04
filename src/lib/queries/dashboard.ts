@@ -1,9 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database.types";
 import { getAssignableReps } from "@/lib/queries/reps";
+import { formatDoctorName } from "@/lib/utils/name-normalization";
 
 type Cycle = Database["public"]["Tables"]["cycles"]["Row"];
 type Client = SupabaseClient<Database>;
+
+export interface RepMetricsDoctor {
+  id: string;
+  name: string;
+  visited: boolean;
+}
 
 export interface RepMetrics {
   repId: string;
@@ -15,6 +22,7 @@ export interface RepMetrics {
   targetVisits: number;
   visitsCompleted: number;
   visitsPlanned: number;
+  doctors: RepMetricsDoctor[];
 }
 
 export async function getActiveCycle(supabase: Client): Promise<Cycle | null> {
@@ -32,25 +40,33 @@ export async function getRepMetrics(
   repName: string,
   cycle: Cycle | null,
 ): Promise<RepMetrics> {
-  const { count: territorySize } = await supabase
+  const { data: territoryDoctors } = await supabase
     .from("doctors")
-    .select("id", { count: "exact", head: true })
+    .select("id, last_name, first_name")
     .eq("current_rep_id", repId)
     .eq("status", "active")
     .neq("rating_cpo", "0")
-    .is("institution", null);
+    .is("institution", null)
+    .order("last_name", { ascending: true });
+
+  const territorySize = territoryDoctors?.length ?? 0;
 
   if (!cycle) {
     return {
       repId,
       repName,
-      territorySize: territorySize ?? 0,
+      territorySize,
       coveredCount: 0,
       coveragePct: 0,
       targetCoveragePct: 0,
       targetVisits: 0,
       visitsCompleted: 0,
       visitsPlanned: 0,
+      doctors: (territoryDoctors ?? []).map((d) => ({
+        id: d.id,
+        name: formatDoctorName(d.last_name, d.first_name),
+        visited: false,
+      })),
     };
   }
 
@@ -76,10 +92,11 @@ export async function getRepMetrics(
         .maybeSingle(),
     ]);
 
-  const coveredCount = new Set(
+  const coveredIds = new Set(
     (completedVisits ?? []).map((v) => v.doctor_id).filter((id): id is string => !!id),
-  ).size;
-  const size = territorySize ?? 0;
+  );
+  const coveredCount = coveredIds.size;
+  const size = territorySize;
   const coveragePct = size > 0 ? (coveredCount / size) * 100 : 0;
 
   return {
@@ -92,6 +109,11 @@ export async function getRepMetrics(
     targetVisits: target?.target_visits ?? 0,
     visitsCompleted: completedVisits?.length ?? 0,
     visitsPlanned: visitsPlanned ?? 0,
+    doctors: (territoryDoctors ?? []).map((d) => ({
+      id: d.id,
+      name: formatDoctorName(d.last_name, d.first_name),
+      visited: coveredIds.has(d.id),
+    })),
   };
 }
 

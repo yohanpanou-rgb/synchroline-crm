@@ -15,6 +15,7 @@ import {
 } from "@/lib/queries/rating";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { CollapsibleCard } from "@/components/ui/CollapsibleCard";
+import { ClickableNumber, type ClickableNumberItem } from "@/components/ui/ClickableNumber";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PacingBar } from "@/components/dashboard/PacingBar";
@@ -84,12 +85,33 @@ function RatingSortHeader({
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function doctorItems(
+  docs: { id: string; name: string; visited?: boolean }[],
+  opts?: { subLabel?: (d: { id: string; name: string; visited?: boolean }) => string | undefined },
+): ClickableNumberItem[] {
+  return docs.map((d) => ({
+    id: d.id,
+    label: d.name,
+    href: `/doctors/${d.id}`,
+    tone: d.visited === undefined ? undefined : d.visited ? "success" : "danger",
+    sublabel: opts?.subLabel?.(d),
+  }));
+}
+
+function StatCard({
+  label,
+  value,
+  items,
+}: {
+  label: string;
+  value: string;
+  items?: ClickableNumberItem[];
+}) {
   return (
     <Card>
       <p className="text-xs font-medium text-ink/50">{label}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums text-primary-dark">
-        {value}
+        {items ? <ClickableNumber items={items}>{value}</ClickableNumber> : value}
       </p>
     </Card>
   );
@@ -103,8 +125,10 @@ function RepRow({ metrics }: { metrics: RepMetrics }) {
           {metrics.repName}
         </p>
         <p className="text-xs text-ink/50">
-          {metrics.coveredCount}/{metrics.territorySize} γιατροί ·{" "}
-          {metrics.visitsCompleted} επισκέψεις
+          <ClickableNumber items={doctorItems(metrics.doctors)}>
+            {metrics.coveredCount}/{metrics.territorySize} γιατροί
+          </ClickableNumber>{" "}
+          · {metrics.visitsCompleted} επισκέψεις
         </p>
       </div>
       <Badge
@@ -116,7 +140,10 @@ function RepRow({ metrics }: { metrics: RepMetrics }) {
               : "danger"
         }
       >
-        {metrics.coveragePct.toFixed(0)}% / στόχος {metrics.targetCoveragePct.toFixed(0)}%
+        <ClickableNumber items={doctorItems(metrics.doctors)} align="right">
+          {metrics.coveragePct.toFixed(0)}%
+        </ClickableNumber>{" "}
+        / στόχος {metrics.targetCoveragePct.toFixed(0)}%
       </Badge>
     </div>
   );
@@ -205,10 +232,21 @@ export default async function DashboardPage({
         </p>
 
         <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3">
-          <StatCard label="Σύνολο γιατρών" value={String(totalDoctors)} />
+          <StatCard
+            label="Σύνολο γιατρών"
+            value={String(totalDoctors)}
+            items={doctorItems(
+              repsMetrics.flatMap((r) => r.doctors),
+              { subLabel: (d) => repsMetrics.find((r) => r.doctors.some((x) => x.id === d.id))?.repName }
+            )}
+          />
           <StatCard
             label="Ολοκληρωμένες επισκέψεις"
             value={String(totalVisits)}
+            items={doctorItems(
+              repsMetrics.flatMap((r) => r.doctors.filter((d) => d.visited)),
+              { subLabel: (d) => repsMetrics.find((r) => r.doctors.some((x) => x.id === d.id))?.repName }
+            )}
           />
           <StatCard label="Μ.Ο. κάλυψης" value={`${avgCoverage.toFixed(0)}%`} />
         </div>
@@ -271,7 +309,9 @@ export default async function DashboardPage({
                       <span className="text-sm font-medium text-ink">{m.repName}</span>
                     </div>
                     <span className="tabular-nums text-sm text-ink/60">
-                      {m.coveragePct.toFixed(0)}%
+                      <ClickableNumber items={doctorItems(m.doctors)} align="right">
+                        {m.coveragePct.toFixed(0)}%
+                      </ClickableNumber>
                     </span>
                   </div>
                 ))}
@@ -357,31 +397,43 @@ export default async function DashboardPage({
                     </td>
                   </tr>
                 )}
-                {ratingMetrics.map((m) => (
-                  <tr key={m.repId}>
-                    <td className="py-2.5 pr-3 font-medium text-ink">{m.repName}</td>
-                    <td className="py-2.5 pr-3 tabular-nums text-ink/70">{m.total}</td>
-                    <td className="py-2.5 pr-3 tabular-nums text-ink/70">
-                      {m.activeCount} ({m.activePct.toFixed(0)}%)
-                    </td>
-                    <td className="py-2.5 pr-3">
-                      <Badge
-                        tone={
-                          m.pendingPct > RATING_CPO_ALERT_THRESHOLD_PCT
-                            ? "danger"
-                            : "neutral"
-                        }
-                      >
-                        {m.pendingCount} ({m.pendingPct.toFixed(0)}%)
-                      </Badge>
-                    </td>
-                    <td className="py-2.5 pr-3">
-                      <div className="w-32">
-                        <RatingStackedBar counts={m.ratingCounts} total={m.total} />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {ratingMetrics.map((m) => {
+                  const allDoctors = (["1", "2", "3", "0", "ΥΔ"] as const).flatMap(
+                    (k) => m.doctorsByRating[k],
+                  );
+                  const activeDoctors = (["1", "2", "3"] as const).flatMap((k) => m.doctorsByRating[k]);
+                  return (
+                    <tr key={m.repId}>
+                      <td className="py-2.5 pr-3 font-medium text-ink">{m.repName}</td>
+                      <td className="py-2.5 pr-3 tabular-nums text-ink/70">
+                        <ClickableNumber items={doctorItems(allDoctors)}>{m.total}</ClickableNumber>
+                      </td>
+                      <td className="py-2.5 pr-3 tabular-nums text-ink/70">
+                        <ClickableNumber items={doctorItems(activeDoctors)}>
+                          {m.activeCount} ({m.activePct.toFixed(0)}%)
+                        </ClickableNumber>
+                      </td>
+                      <td className="py-2.5 pr-3">
+                        <Badge
+                          tone={
+                            m.pendingPct > RATING_CPO_ALERT_THRESHOLD_PCT
+                              ? "danger"
+                              : "neutral"
+                          }
+                        >
+                          <ClickableNumber items={doctorItems(m.doctorsByRating["ΥΔ"])}>
+                            {m.pendingCount} ({m.pendingPct.toFixed(0)}%)
+                          </ClickableNumber>
+                        </Badge>
+                      </td>
+                      <td className="py-2.5 pr-3">
+                        <div className="w-32">
+                          <RatingStackedBar counts={m.ratingCounts} total={m.total} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
               {ratingMetrics.length > 0 && (
                 <tfoot>
@@ -440,7 +492,9 @@ export default async function DashboardPage({
                 {countyRatingMetrics.map((m) => (
                   <tr key={m.county}>
                     <td className="py-2.5 pr-3 font-medium text-ink">{m.county}</td>
-                    <td className="py-2.5 pr-3 tabular-nums text-ink/70">{m.total}</td>
+                    <td className="py-2.5 pr-3 tabular-nums text-ink/70">
+                      <ClickableNumber items={doctorItems(m.doctors)}>{m.total}</ClickableNumber>
+                    </td>
                     <td className="py-2.5 pr-3 tabular-nums text-ink/70">
                       {m.activeCount} ({m.activePct.toFixed(0)}%)
                     </td>
@@ -531,21 +585,50 @@ export default async function DashboardPage({
               <tbody className="divide-y divide-black/5">
                 {repsMetrics.map((m) => {
                   const h = hospitalMetricsByRepId.get(m.repId);
+                  const hospitalDoctors = [
+                    ...(h?.visitedDoctors ?? []),
+                    ...(h?.unvisitedDoctors ?? []),
+                  ];
+                  const allDoctors = [
+                    ...doctorItems(m.doctors),
+                    ...hospitalDoctors.map((d) => ({
+                      id: d.id,
+                      label: d.name,
+                      href: `/doctors/${d.id}`,
+                    })),
+                  ];
                   return (
                     <tr key={m.repId}>
                       <td className="py-2.5 pr-3 font-medium text-ink">{m.repName}</td>
-                      <td className="py-2.5 pr-3 tabular-nums text-ink/70">{m.territorySize}</td>
                       <td className="py-2.5 pr-3 tabular-nums text-ink/70">
-                        {m.coveragePct.toFixed(0)}%
+                        <ClickableNumber items={doctorItems(m.doctors)}>{m.territorySize}</ClickableNumber>
                       </td>
                       <td className="py-2.5 pr-3 tabular-nums text-ink/70">
-                        {h?.hospitalDoctorCount ?? 0}
+                        <ClickableNumber items={doctorItems(m.doctors)}>
+                          {m.coveragePct.toFixed(0)}%
+                        </ClickableNumber>
                       </td>
                       <td className="py-2.5 pr-3 tabular-nums text-ink/70">
-                        {(h?.hospitalCoveragePct ?? 0).toFixed(0)}%
+                        <ClickableNumber
+                          items={hospitalDoctors.map((d) => ({ id: d.id, label: d.name, href: `/doctors/${d.id}` }))}
+                        >
+                          {h?.hospitalDoctorCount ?? 0}
+                        </ClickableNumber>
+                      </td>
+                      <td className="py-2.5 pr-3 tabular-nums text-ink/70">
+                        <ClickableNumber
+                          items={[
+                            ...(h?.visitedDoctors.map((d) => ({ id: d.id, label: d.name, href: `/doctors/${d.id}`, tone: "success" as const })) ?? []),
+                            ...(h?.unvisitedDoctors.map((d) => ({ id: d.id, label: d.name, href: `/doctors/${d.id}`, tone: "danger" as const })) ?? []),
+                          ]}
+                        >
+                          {(h?.hospitalCoveragePct ?? 0).toFixed(0)}%
+                        </ClickableNumber>
                       </td>
                       <td className="py-2.5 pr-3 tabular-nums font-medium text-ink">
-                        {m.territorySize + (h?.hospitalDoctorCount ?? 0)}
+                        <ClickableNumber items={allDoctors} align="right">
+                          {m.territorySize + (h?.hospitalDoctorCount ?? 0)}
+                        </ClickableNumber>
                       </td>
                     </tr>
                   );
@@ -576,20 +659,30 @@ export default async function DashboardPage({
             {hospitalMetrics.length === 0 && (
               <p className="py-4 text-sm text-ink/50">Δεν υπάρχουν reps.</p>
             )}
-            {hospitalMetrics.map((h) => (
-              <div key={h.repId} className="flex items-center justify-between gap-3 py-2.5">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-ink">{h.repName}</p>
-                  <p className="text-xs text-ink/50">
-                    {h.hospitalDoctorsVisited}/{h.hospitalDoctorCount} γιατροί ·{" "}
-                    {h.hospitalVisitsThisCycle} επισκέψεις
-                  </p>
+            {hospitalMetrics.map((h) => {
+              const items = [
+                ...h.visitedDoctors.map((d) => ({ id: d.id, label: d.name, href: `/doctors/${d.id}`, tone: "success" as const })),
+                ...h.unvisitedDoctors.map((d) => ({ id: d.id, label: d.name, href: `/doctors/${d.id}`, tone: "danger" as const })),
+              ];
+              return (
+                <div key={h.repId} className="flex items-center justify-between gap-3 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-ink">{h.repName}</p>
+                    <p className="text-xs text-ink/50">
+                      <ClickableNumber items={items}>
+                        {h.hospitalDoctorsVisited}/{h.hospitalDoctorCount} γιατροί
+                      </ClickableNumber>{" "}
+                      · {h.hospitalVisitsThisCycle} επισκέψεις
+                    </p>
+                  </div>
+                  <span className="tabular-nums text-sm text-ink/60">
+                    <ClickableNumber items={items} align="right">
+                      {h.hospitalCoveragePct.toFixed(0)}%
+                    </ClickableNumber>
+                  </span>
                 </div>
-                <span className="tabular-nums text-sm text-ink/60">
-                  {h.hospitalCoveragePct.toFixed(0)}%
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       </div>
@@ -630,10 +723,16 @@ export default async function DashboardPage({
         <StatCard
           label="Γιατροί πελατολογίου (1+2+3)"
           value={String(ratingMetrics.activeCount)}
+          items={doctorItems([
+            ...ratingMetrics.doctorsByRating["1"],
+            ...ratingMetrics.doctorsByRating["2"],
+            ...ratingMetrics.doctorsByRating["3"],
+          ])}
         />
         <StatCard
           label="Ολοκληρωμένες επισκέψεις"
           value={String(metrics.visitsCompleted)}
+          items={doctorItems(metrics.doctors.filter((d) => d.visited))}
         />
         <StatCard
           label="Προγραμματισμένες"
@@ -643,10 +742,12 @@ export default async function DashboardPage({
         <StatCard
           label="Χωρίς επίσκεψη (0)"
           value={String(ratingMetrics.rating0Count)}
+          items={doctorItems(ratingMetrics.doctorsByRating["0"])}
         />
         <StatCard
           label="Υπό διερεύνηση (ΥΔ)"
           value={String(ratingMetrics.pendingCount)}
+          items={doctorItems(ratingMetrics.doctorsByRating["ΥΔ"])}
         />
       </div>
 
@@ -693,7 +794,15 @@ export default async function DashboardPage({
           <div>
             <p className="text-xs text-ink/50">Ενεργοί (1+2+3)</p>
             <p className="mt-0.5 text-lg font-semibold tabular-nums text-primary-dark">
-              {ratingMetrics.activeCount}
+              <ClickableNumber
+                items={doctorItems([
+                  ...ratingMetrics.doctorsByRating["1"],
+                  ...ratingMetrics.doctorsByRating["2"],
+                  ...ratingMetrics.doctorsByRating["3"],
+                ])}
+              >
+                {ratingMetrics.activeCount}
+              </ClickableNumber>
               <span className="ml-1 text-xs font-normal text-ink/50">
                 {ratingMetrics.activePct.toFixed(0)}%
               </span>
@@ -702,7 +811,9 @@ export default async function DashboardPage({
           <div>
             <p className="text-xs text-ink/50">Χωρίς επίσκεψη</p>
             <p className="mt-0.5 text-lg font-semibold tabular-nums text-ink">
-              {ratingMetrics.rating0Count}
+              <ClickableNumber items={doctorItems(ratingMetrics.doctorsByRating["0"])}>
+                {ratingMetrics.rating0Count}
+              </ClickableNumber>
               <span className="ml-1 text-xs font-normal text-ink/50">
                 {ratingMetrics.rating0Pct.toFixed(0)}%
               </span>
@@ -718,7 +829,9 @@ export default async function DashboardPage({
                   : "text-ink",
               )}
             >
-              {ratingMetrics.pendingCount}
+              <ClickableNumber items={doctorItems(ratingMetrics.doctorsByRating["ΥΔ"])}>
+                {ratingMetrics.pendingCount}
+              </ClickableNumber>
               <span className="ml-1 text-xs font-normal text-ink/50">
                 {ratingMetrics.pendingPct.toFixed(0)}%
               </span>
@@ -792,8 +905,16 @@ export default async function DashboardPage({
         {hospitalMetrics && hospitalMetrics.hospitalDoctorCount > 0 ? (
           <>
             <p className="mb-2 text-sm text-ink">
-              {hospitalMetrics.hospitalDoctorsVisited}/{hospitalMetrics.hospitalDoctorCount} γιατροί
-              καλύφθηκαν · {hospitalMetrics.hospitalVisitsThisCycle} επισκέψεις
+              <ClickableNumber
+                items={[
+                  ...hospitalMetrics.visitedDoctors.map((d) => ({ id: d.id, label: d.name, href: `/doctors/${d.id}`, tone: "success" as const })),
+                  ...hospitalMetrics.unvisitedDoctors.map((d) => ({ id: d.id, label: d.name, href: `/doctors/${d.id}`, tone: "danger" as const })),
+                ]}
+              >
+                {hospitalMetrics.hospitalDoctorsVisited}/{hospitalMetrics.hospitalDoctorCount} γιατροί
+                καλύφθηκαν
+              </ClickableNumber>{" "}
+              · {hospitalMetrics.hospitalVisitsThisCycle} επισκέψεις
             </p>
             <ProgressBar value={hospitalMetrics.hospitalCoveragePct} colorClassName="bg-primary" />
           </>
@@ -810,13 +931,22 @@ export default async function DashboardPage({
           <div>
             <p className="text-xs text-ink/50">Ιδιώτες</p>
             <p className="mt-0.5 text-lg font-semibold tabular-nums text-primary-dark">
-              {metrics.territorySize}
+              <ClickableNumber items={doctorItems(metrics.doctors)}>
+                {metrics.territorySize}
+              </ClickableNumber>
             </p>
           </div>
           <div>
             <p className="text-xs text-ink/50">Νοσοκομειακοί</p>
             <p className="mt-0.5 text-lg font-semibold tabular-nums text-primary-dark">
-              {hospitalMetrics?.hospitalDoctorCount ?? 0}
+              <ClickableNumber
+                items={[
+                  ...(hospitalMetrics?.visitedDoctors.map((d) => ({ id: d.id, label: d.name, href: `/doctors/${d.id}`, tone: "success" as const })) ?? []),
+                  ...(hospitalMetrics?.unvisitedDoctors.map((d) => ({ id: d.id, label: d.name, href: `/doctors/${d.id}`, tone: "danger" as const })) ?? []),
+                ]}
+              >
+                {hospitalMetrics?.hospitalDoctorCount ?? 0}
+              </ClickableNumber>
             </p>
           </div>
           <div>

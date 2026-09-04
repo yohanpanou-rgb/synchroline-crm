@@ -289,6 +289,8 @@ export interface RepHospitalMetrics {
   hospitalDoctorsVisited: number;
   hospitalCoveragePct: number;
   hospitalVisitsThisCycle: number;
+  visitedDoctors: HospitalCoverageDoctor[];
+  unvisitedDoctors: HospitalCoverageDoctor[];
 }
 
 /**
@@ -318,6 +320,8 @@ export async function getAllRepsHospitalMetrics(
     let hospitalDoctorCount = 0;
     let hospitalDoctorsVisited = 0;
     let hospitalVisitsThisCycle = 0;
+    const visitedDoctors: HospitalCoverageDoctor[] = [];
+    const unvisitedDoctors: HospitalCoverageDoctor[] = [];
 
     for (const entry of coverage) {
       const assignedReps = repIdsByInstitutionId.get(entry.id) ?? [];
@@ -325,6 +329,8 @@ export async function getAllRepsHospitalMetrics(
       hospitalDoctorCount += entry.doctorCount;
       hospitalDoctorsVisited += entry.coveredDoctors.length;
       hospitalVisitsThisCycle += entry.byRep.find((r) => r.repId === rep.id)?.count ?? 0;
+      visitedDoctors.push(...entry.coveredDoctors);
+      unvisitedDoctors.push(...entry.uncoveredDoctors);
     }
 
     return {
@@ -335,6 +341,8 @@ export async function getAllRepsHospitalMetrics(
       hospitalCoveragePct:
         hospitalDoctorCount > 0 ? (hospitalDoctorsVisited / hospitalDoctorCount) * 100 : 0,
       hospitalVisitsThisCycle,
+      visitedDoctors,
+      unvisitedDoctors,
     };
   });
 }
