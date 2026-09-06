@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database.types";
+import { formatDoctorName } from "@/lib/utils/name-normalization";
 
 type Client = SupabaseClient<Database>;
 type Cycle = Database["public"]["Tables"]["cycles"]["Row"];
@@ -128,4 +129,63 @@ export async function getInstitutionVisitStats(
       .map(([repId, v]) => ({ repId, repName: v.repName, count: v.count }))
       .sort((a, b) => b.count - a.count),
   };
+}
+
+export interface HospitalVisitLogEntry {
+  id: string;
+  date: string | null;
+  status: string;
+  hospitalName: string;
+  repName: string;
+  doctorNames: string[];
+}
+
+/**
+ * Ιστορικό επισκέψεων-νοσοκομείου (visits.hospital_id not null) — ημερομηνία,
+ * νοσοκομείο, rep, και ποιοι γιατροί καταγράφηκαν ως ενημερωμένοι στη
+ * συγκεκριμένη επίσκεψη. Ένας rep βλέπει μόνο τις δικές του επισκέψεις,
+ * manager/admin βλέπει όλες.
+ */
+export async function getHospitalVisitLog(
+  supabase: Client,
+  { repId, limit = 50 }: { repId?: string; limit?: number } = {},
+): Promise<HospitalVisitLogEntry[]> {
+  let query = supabase
+    .from("visits")
+    .select(
+      "id, scheduled_date, completed_date, status, institutions(name), profiles!visits_rep_id_fkey(full_name)",
+    )
+    .not("hospital_id", "is", null)
+    .order("scheduled_date", { ascending: false })
+    .limit(limit);
+
+  if (repId) query = query.eq("rep_id", repId);
+
+  const { data: visits } = await query;
+  const visitIds = (visits ?? []).map((v) => v.id);
+
+  const { data: links } =
+    visitIds.length > 0
+      ? await supabase
+          .from("visit_hospital_doctors")
+          .select("visit_id, doctors(last_name, first_name)")
+          .in("visit_id", visitIds)
+      : { data: [] as { visit_id: string; doctors: { last_name: string; first_name: string } | null }[] };
+
+  const doctorNamesByVisitId = new Map<string, string[]>();
+  for (const l of links ?? []) {
+    if (!l.doctors) continue;
+    const arr = doctorNamesByVisitId.get(l.visit_id) ?? [];
+    arr.push(formatDoctorName(l.doctors.last_name, l.doctors.first_name));
+    doctorNamesByVisitId.set(l.visit_id, arr);
+  }
+
+  return (visits ?? []).map((v) => ({
+    id: v.id,
+    date: v.scheduled_date ?? v.completed_date,
+    status: v.status,
+    hospitalName: v.institutions?.name ?? "—",
+    repName: v.profiles?.full_name ?? "—",
+    doctorNames: doctorNamesByVisitId.get(v.id) ?? [],
+  }));
 }
