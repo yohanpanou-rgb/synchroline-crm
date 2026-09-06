@@ -22,6 +22,13 @@ const str = (formData: FormData, key: string) => {
   return typeof v === "string" && v.trim() !== "" ? v.trim() : null;
 };
 
+/** Πού να επιστρέψει μετά την αποθήκευση — π.χ. πίσω στο ημερολόγιο αν η
+ * επίσκεψη ξεκίνησε από εκεί, ώστε ο rep να συνεχίσει τον προγραμματισμό. */
+function resolveReturnTo(formData: FormData): string {
+  const returnTo = str(formData, "return_to");
+  return returnTo && returnTo.startsWith("/visits/calendar") ? returnTo : "/visits";
+}
+
 async function upsertProducts(
   supabase: Awaited<ReturnType<typeof createClient>>,
   visitId: string,
@@ -165,7 +172,7 @@ export async function createVisit(formData: FormData) {
   revalidatePath("/visits/calendar");
   if (doctorId) revalidatePath(`/doctors/${doctorId}`);
   if (hospitalId) revalidatePath("/hospitals");
-  redirect("/visits");
+  redirect(resolveReturnTo(formData));
 }
 
 export async function updateVisit(visitId: string, formData: FormData) {
@@ -205,7 +212,7 @@ export async function updateVisit(visitId: string, formData: FormData) {
   revalidatePath("/visits/calendar");
   if (doctorId) revalidatePath(`/doctors/${doctorId}`);
   if (hospitalId) revalidatePath("/hospitals");
-  redirect("/visits");
+  redirect(resolveReturnTo(formData));
 }
 
 /**

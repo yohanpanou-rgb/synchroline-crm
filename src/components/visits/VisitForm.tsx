@@ -83,6 +83,7 @@ export function VisitForm({
   products,
   existingCompetitors,
   submitLabel = "Καταχώρηση επίσκεψης",
+  returnTo,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   doctors: DoctorOption[];
@@ -101,6 +102,7 @@ export function VisitForm({
   products?: Partial<Record<ProductName, { samples_given: number; notes: string | null }>>;
   existingCompetitors?: { category: string; competitorName: string }[];
   submitLabel?: string;
+  returnTo?: string;
 }) {
   const isEdit = !!visit;
   const [status, setStatus] = useState<VisitStatus>(visit?.status ?? defaultStatus ?? "planned");
@@ -154,6 +156,7 @@ export function VisitForm({
   return (
     <form action={action} className="space-y-6">
       <input type="hidden" name="cycle_id" value={cycleId ?? ""} />
+      {returnTo && <input type="hidden" name="return_to" value={returnTo} />}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {isEdit ? (

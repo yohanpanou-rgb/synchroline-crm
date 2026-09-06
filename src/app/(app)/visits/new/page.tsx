@@ -17,12 +17,24 @@ export default async function NewVisitPage({
     time?: string;
     error?: string;
     status?: string;
+    from?: string;
+    view?: string;
+    rep?: string;
   }>;
 }) {
   const profile = await requireProfile();
-  const { doctorId, date, time, error, status } = await searchParams;
+  const { doctorId, date, time, error, status, from, view, rep } = await searchParams;
   const manager = isManagerOrAdmin(profile.role);
   const supabase = await createClient();
+
+  const returnTo =
+    from === "calendar"
+      ? `/visits/calendar?${new URLSearchParams({
+          ...(view ? { view } : {}),
+          ...(date ? { date } : {}),
+          ...(rep ? { rep } : {}),
+        }).toString()}`
+      : undefined;
 
   let doctorsQuery = supabase
     .from("doctors")
@@ -53,7 +65,7 @@ export default async function NewVisitPage({
 
   return (
     <div className="mx-auto max-w-2xl">
-      <BackButton fallbackHref="/visits" />
+      <BackButton fallbackHref={returnTo ?? "/visits"} />
       <h1 className="mb-6 text-xl font-semibold text-primary-dark">
         Νέα επίσκεψη
       </h1>
@@ -83,6 +95,7 @@ export default async function NewVisitPage({
           defaultStatus={status === "completed" ? "completed" : undefined}
           cycleId={cycle?.id}
           cycleName={cycle?.name}
+          returnTo={returnTo}
         />
       </Card>
     </div>

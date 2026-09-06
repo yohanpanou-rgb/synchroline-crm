@@ -35,27 +35,24 @@ function groupBySlot(visits: CalendarVisit[]) {
   return map;
 }
 
-function VisitChip({ visit }: { visit: CalendarVisit }) {
+function VisitChip({ visit, returnQS }: { visit: CalendarVisit; returnQS: string }) {
   const completed = visit.status === "completed";
   const chipClassName = cn(
     "block truncate rounded-md px-1.5 py-0.5 text-[11px] leading-tight hover:opacity-80",
     completed ? "bg-success/15 text-success" : "bg-primary/10 text-primary-dark",
   );
+  const editHref = `/visits/${visit.id}/edit?${returnQS}`;
 
   if (!visit.doctor_id) {
     return (
-      <a href={`/visits/${visit.id}/edit`} className={chipClassName}>
+      <a href={editHref} className={chipClassName}>
         <p className="truncate font-medium">🏥 {visit.hospital?.name ?? "—"}</p>
       </a>
     );
   }
 
   return (
-    <DoctorHoverCard
-      doctorId={visit.doctor_id}
-      href={`/visits/${visit.id}/edit`}
-      className={chipClassName}
-    >
+    <DoctorHoverCard doctorId={visit.doctor_id} href={editHref} className={chipClassName}>
       <p className="truncate font-medium">
         {visit.doctor
           ? formatDoctorName(visit.doctor.last_name, visit.doctor.first_name)
@@ -91,7 +88,7 @@ export default async function CalendarPage({
         <h1 className="text-xl font-semibold text-primary-dark">
           Ημερολόγιο επισκέψεων
         </h1>
-        <Link href="/visits/new">
+        <Link href={`/visits/new?from=calendar&view=${view}&date=${toISODate(anchor)}${repParam}`}>
           <Button size="md">+ Νέα επίσκεψη</Button>
         </Link>
       </div>
@@ -221,7 +218,7 @@ async function WeekView({ supabase, anchor, repId, manager, repParam }: ViewProp
                       <DroppableSlot date={toISODate(d)} time={time} className="min-h-11">
                         {cellVisits.length === 0 ? (
                           <Link
-                            href={`/visits/new?date=${toISODate(d)}&time=${time}`}
+                            href={`/visits/new?date=${toISODate(d)}&time=${time}&from=calendar&view=week${repParam}`}
                             title="Νέα επίσκεψη"
                             className="flex min-h-11 w-full items-center justify-center text-ink/20 transition-colors hover:bg-primary/5 hover:text-primary"
                           >
@@ -231,7 +228,10 @@ async function WeekView({ supabase, anchor, repId, manager, repParam }: ViewProp
                           <div className="space-y-1 p-1">
                             {cellVisits.map((v) => (
                               <DraggableVisit key={v.id} visitId={v.id}>
-                                <VisitChip visit={v} />
+                                <VisitChip
+                                  visit={v}
+                                  returnQS={`from=calendar&view=week&date=${toISODate(d)}${repParam}`}
+                                />
                               </DraggableVisit>
                             ))}
                           </div>
@@ -301,7 +301,7 @@ async function DayView({ supabase, anchor, repId, manager, repParam }: ViewProps
                       <DroppableSlot date={dayISO} time={time} className="min-h-11">
                         {cellVisits.length === 0 ? (
                           <Link
-                            href={`/visits/new?date=${dayISO}&time=${time}`}
+                            href={`/visits/new?date=${dayISO}&time=${time}&from=calendar&view=day${repParam}`}
                             title="Νέα επίσκεψη"
                             className="flex min-h-11 w-full items-center px-3 text-ink/20 transition-colors hover:bg-primary/5 hover:text-primary"
                           >
@@ -311,7 +311,10 @@ async function DayView({ supabase, anchor, repId, manager, repParam }: ViewProps
                           <div className="space-y-1 p-1">
                             {cellVisits.map((v) => (
                               <DraggableVisit key={v.id} visitId={v.id}>
-                                <VisitChip visit={v} />
+                                <VisitChip
+                                  visit={v}
+                                  returnQS={`from=calendar&view=day&date=${dayISO}${repParam}`}
+                                />
                               </DraggableVisit>
                             ))}
                           </div>
@@ -420,12 +423,13 @@ async function MonthView({ supabase, anchor, repId, manager, repParam }: ViewPro
                                   ? "bg-success/15 text-success"
                                   : "bg-primary/10 text-primary-dark",
                               );
+                              const monthEditHref = `/visits/${v.id}/edit?from=calendar&view=month&date=${toISODate(d)}${repParam}`;
                               return (
                                 <DraggableVisit key={v.id} visitId={v.id}>
                                   {v.doctor_id ? (
                                     <DoctorHoverCard
                                       doctorId={v.doctor_id}
-                                      href={`/visits/${v.id}/edit`}
+                                      href={monthEditHref}
                                       className={chipClassName}
                                     >
                                       {v.doctor
@@ -433,7 +437,7 @@ async function MonthView({ supabase, anchor, repId, manager, repParam }: ViewPro
                                         : "—"}
                                     </DoctorHoverCard>
                                   ) : (
-                                    <a href={`/visits/${v.id}/edit`} className={chipClassName}>
+                                    <a href={monthEditHref} className={chipClassName}>
                                       🏥 {v.hospital?.name ?? "—"}
                                     </a>
                                   )}

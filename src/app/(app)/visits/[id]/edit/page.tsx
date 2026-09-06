@@ -16,13 +16,22 @@ export default async function EditVisitPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; from?: string; view?: string; date?: string; rep?: string }>;
 }) {
   const profile = await requireProfile();
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, from, view, date, rep } = await searchParams;
   const manager = isManagerOrAdmin(profile.role);
   const supabase = await createClient();
+
+  const returnTo =
+    from === "calendar"
+      ? `/visits/calendar?${new URLSearchParams({
+          ...(view ? { view } : {}),
+          ...(date ? { date } : {}),
+          ...(rep ? { rep } : {}),
+        }).toString()}`
+      : undefined;
 
   const { data: visit } = await supabase
     .from("visits")
@@ -69,7 +78,7 @@ export default async function EditVisitPage({
 
   return (
     <div className="mx-auto max-w-2xl">
-      <BackButton fallbackHref="/visits" />
+      <BackButton fallbackHref={returnTo ?? "/visits"} />
       <h1 className="mb-6 text-xl font-semibold text-primary-dark">
         Επεξεργασία επίσκεψης
       </h1>
@@ -114,6 +123,7 @@ export default async function EditVisitPage({
           cycleId={visit.cycle_id}
           cycleName={visit.cycles?.name}
           submitLabel="Αποθήκευση"
+          returnTo={returnTo}
         />
       </Card>
 
