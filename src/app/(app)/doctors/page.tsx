@@ -62,11 +62,18 @@ export default async function DoctorsPage({
       .filter((n): n is string => !!n);
   }
 
-  let query = supabase.from("doctors").select("*").order("last_name", { ascending: true });
+  // Χωρίς explicit limit το PostgREST κόβει σιωπηλά στις ~1000 γραμμές -- με
+  // ~1500 γιατρούς συνολικά αυτό έκρυβε γιατρούς από τη λίστα και αλλοίωνε
+  // τα "Όλοι"/rating-chip counts όταν δεν ήταν επιλεγμένος συγκεκριμένος rep.
+  let query = supabase
+    .from("doctors")
+    .select("*")
+    .order("last_name", { ascending: true })
+    .limit(5000);
 
   // Ίδια βάση φίλτρων (χωρίς rating), μόνο ιδιώτες — τα counts στα chips
   // παραμένουν βάση αξιολόγησης του ιδιωτικού πελατολογίου (KPI).
-  let countQuery = supabase.from("doctors").select("rating_cpo").is("institution", null);
+  let countQuery = supabase.from("doctors").select("rating_cpo").is("institution", null).limit(5000);
 
   if (q) {
     query = query.or(`last_name.ilike.%${q}%,first_name.ilike.%${q}%`);
@@ -92,16 +99,28 @@ export default async function DoctorsPage({
 
   // Οι επιλογές του φίλτρου "Περιοχή" περιορίζονται στον επιλεγμένο rep (αν
   // υπάρχει), ώστε το dropdown να δείχνει μόνο περιοχές όπου έχει πράγματι
-  // γιατρούς -- όχι όλο τον κατάλογο περιοχών όλης της εταιρείας.
-  let regionOptionsQuery = supabase.from("doctors").select("region");
-  if (manager && rep) regionOptionsQuery = regionOptionsQuery.eq("current_rep_id", rep);
+  // γιατρούς -- όχι όλο τον κατάλογο περιοχών όλης της εταιρείας. Χωρίς
+  // explicit limit το PostgREST κόβει σιωπηλά στις ~1000 γραμμές -- με ~1500
+  // γιατρούς συνολικά αυτό αλλοίωνε τη λίστα regions/το "χωρίς περιοχή"
+  // count όταν δεν ήταν επιλεγμένος συγκεκριμένος rep.
+  let regionOptionsQuery = supabase.from("doctors").select("region").limit(5000);
+  let noRegionCountQuery = supabase
+    .from("doctors")
+    .select("*", { count: "exact", head: true })
+    .is("region", null);
+  if (manager && rep) {
+    regionOptionsQuery = regionOptionsQuery.eq("current_rep_id", rep);
+    noRegionCountQuery = noRegionCountQuery.eq("current_rep_id", rep);
+  }
 
-  const [{ data: doctors }, { data: ratingRows }, { data: regionRows }, reps] = await Promise.all([
-    query,
-    countQuery,
-    regionOptionsQuery,
-    manager ? getAssignableReps(supabase) : Promise.resolve([]),
-  ]);
+  const [{ data: doctors }, { data: ratingRows }, { data: regionRows }, { count: noRegionCount }, reps] =
+    await Promise.all([
+      query,
+      countQuery,
+      regionOptionsQuery,
+      noRegionCountQuery,
+      manager ? getAssignableReps(supabase) : Promise.resolve([]),
+    ]);
 
   const ratingCounts = new Map<string, number>();
   for (const r of ratingRows ?? []) {
@@ -114,7 +133,6 @@ export default async function DoctorsPage({
   const regions = [
     ...new Set((regionRows ?? []).map((r) => r.region).filter((r): r is string => !!r)),
   ].sort((a, b) => a.localeCompare(b, "el"));
-  const noRegionCount = (regionRows ?? []).filter((r) => !r.region).length;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -153,7 +171,7 @@ export default async function DoctorsPage({
         initialRegion={region ?? ""}
         reps={manager ? reps : undefined}
         initialRep={rep ?? ""}
-        noRegionCount={manager ? noRegionCount : undefined}
+        noRegionCount={manager ? (noRegionCount ?? 0) : undefined}
         noRegionValue={NO_REGION_VALUE}
       />
 
