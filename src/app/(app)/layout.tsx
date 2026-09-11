@@ -5,6 +5,10 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Header } from "@/components/layout/Header";
 
+// Το layout διαβάζει cookies() (view_role toggle) -- πάντα δυναμικό, ποτέ
+// cached, ώστε το "Ως Manager/Ως Rep" toggle να ενημερώνει άμεσα sidebar/header.
+export const dynamic = "force-dynamic";
+
 export default async function AppLayout({
   children,
 }: {

@@ -1,10 +1,21 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { RATING_CPO_OPTIONS } from "@/lib/constants/rating";
 import type { RatingCpo } from "@/lib/types/database.types";
 import { updateDoctorRating } from "@/app/(app)/doctors/actions";
 import { cn } from "@/lib/utils/cn";
+
+/**
+ * Το "new row violates row-level security policy" σκέτο δεν λέει τίποτα
+ * χρήσιμο στον χρήστη -- στην πράξη σχεδόν πάντα σημαίνει ότι η σύνδεσή του
+ * έχει λήξει (π.χ. tablet που έμεινε ανοιχτό στο παρασκήνιο ώρες) και το
+ * request στάλθηκε χωρίς έγκυρο session. Friendlier μήνυμα + άμεσο link.
+ */
+function isSessionExpiredError(message: string) {
+  return /row-level security/i.test(message);
+}
 
 const TONE_CLASSES: Record<RatingCpo, string> = {
   "1": "bg-success text-white",
@@ -64,7 +75,21 @@ export function RatingCpoControl({
           </button>
         ))}
       </div>
-      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      {error && (
+        <p className="mt-2 text-xs text-danger">
+          {isSessionExpiredError(error) ? (
+            <>
+              Η σύνδεσή σου έχει λήξει.{" "}
+              <Link href="/login" className="underline">
+                Βγες και ξαναμπές
+              </Link>{" "}
+              για να συνεχίσεις.
+            </>
+          ) : (
+            error
+          )}
+        </p>
+      )}
     </div>
   );
 }

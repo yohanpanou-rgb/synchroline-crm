@@ -129,7 +129,17 @@ export default async function DoctorDetailPage({
 
       {error && (
         <p className="mb-4 rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
-          {error}
+          {/rls|row-level security/i.test(error) ? (
+            <>
+              Η σύνδεσή σου έχει λήξει.{" "}
+              <Link href="/login" className="underline">
+                Βγες και ξαναμπές
+              </Link>{" "}
+              για να αποθηκευτούν οι αλλαγές.
+            </>
+          ) : (
+            error
+          )}
         </p>
       )}
 
