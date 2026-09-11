@@ -17,7 +17,12 @@ export async function createInstitution(name: string): Promise<{ error?: string 
 
   const supabase = await createClient();
   const { error } = await supabase.from("institutions").insert({ name: name.trim() });
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.code === "23505") {
+      return { error: `Υπάρχει ήδη νοσοκομείο με το όνομα «${name.trim()}» -- το βλέπεις στη λίστα παρακάτω.` };
+    }
+    return { error: error.message };
+  }
 
   revalidatePath("/hospitals");
   return {};
