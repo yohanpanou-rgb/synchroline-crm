@@ -9,6 +9,10 @@ import { getAssignableReps } from "@/lib/queries/reps";
 import type { RatingCpo } from "@/lib/types/database.types";
 import { cn } from "@/lib/utils/cn";
 
+// Πάντα δυναμικό rendering -- η σελίδα εξαρτάται εξ ολοκλήρου από
+// searchParams (φίλτρα) και δεν πρέπει ποτέ να σερβίρεται από cache.
+export const dynamic = "force-dynamic";
+
 /** Sentinel τιμή για το φίλτρο "Χωρίς περιοχή" (region IS NULL) -- manager only. */
 const NO_REGION_VALUE = "__no_region__";
 

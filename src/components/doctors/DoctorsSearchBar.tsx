@@ -24,7 +24,15 @@ export function DoctorsSearchBar({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(initialQuery);
+  // Ελεγχόμενα (controlled) selects -- συγχρονισμένα ρητά με τα searchParams
+  // ώστε να ΜΗΝ μένουν "κολλημένα" σε παλιά επιλογή όταν αλλάζει ένα άλλο
+  // φίλτρο (π.χ. rep) και το component δεν ξαναγίνεται mount.
+  const [region, setRegion] = useState(initialRegion);
+  const [rep, setRep] = useState(initialRep ?? "");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => setRegion(initialRegion), [initialRegion]);
+  useEffect(() => setRep(initialRep ?? ""), [initialRep]);
 
   function pushParams(next: { q?: string; region?: string; rep?: string }) {
     const params = new URLSearchParams(searchParams.toString());
@@ -33,9 +41,6 @@ export function DoctorsSearchBar({
       else params.delete(key);
     }
     router.push(`/doctors?${params.toString()}`);
-    // Οι δύο selects είναι uncontrolled (defaultValue) -- χωρίς refresh() το
-    // Next.js router cache μπορεί να δείξει προσωρινά μπαγιάτικα counts/λίστα
-    // μέχρι το επόμενο πλήρες reload.
     router.refresh();
   }
 
@@ -59,8 +64,11 @@ export function DoctorsSearchBar({
         className="h-11 w-full rounded-xl border border-black/10 bg-white px-3.5 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
       />
       <select
-        defaultValue={initialRegion}
-        onChange={(e) => pushParams({ region: e.target.value })}
+        value={region}
+        onChange={(e) => {
+          setRegion(e.target.value);
+          pushParams({ region: e.target.value });
+        }}
         className="h-11 shrink-0 rounded-xl border border-black/10 bg-white px-3 text-sm text-ink"
       >
         <option value="">Όλες οι περιοχές</option>
@@ -75,8 +83,11 @@ export function DoctorsSearchBar({
       </select>
       {reps && reps.length > 0 && (
         <select
-          defaultValue={initialRep ?? ""}
-          onChange={(e) => pushParams({ rep: e.target.value })}
+          value={rep}
+          onChange={(e) => {
+            setRep(e.target.value);
+            pushParams({ rep: e.target.value });
+          }}
           className="h-11 shrink-0 rounded-xl border border-black/10 bg-white px-3 text-sm text-ink"
         >
           <option value="">Όλοι οι reps</option>
