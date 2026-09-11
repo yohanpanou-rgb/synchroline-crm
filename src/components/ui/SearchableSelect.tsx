@@ -12,26 +12,50 @@ export interface SearchableSelectOption {
 /**
  * Combobox με client-side φιλτράρισμα πάνω σε ήδη φορτωμένη λίστα επιλογών
  * (χωρίς server round-trip) -- για πεδία με πολλές επιλογές (π.χ. "Κοντινός
- * γιατρός") όπου ένα απλό <select> είναι δύσχρηστο για αναζήτηση.
+ * γιατρός", "Περιοχή") όπου ένα απλό <select> είναι δύσχρηστο για αναζήτηση.
+ *
+ * Δύο τρόποι χρήσης:
+ * - Μέσα σε <form>: δώσε `name` (+ προαιρετικά `defaultValue`) -- υποβάλλει
+ *   κρυφό input, ίδιο pattern με ένα απλό uncontrolled <select>.
+ * - Controlled (π.χ. φίλτρο που πλοηγεί άμεσα): δώσε `value` + `onChange` --
+ *   ενημερώνεται από τον γονέα, καμία εσωτερική κατάσταση επιλογής.
  */
 export function SearchableSelect({
   name,
   options,
   defaultValue,
+  value: controlledValue,
+  onChange,
   placeholder = "Αναζήτηση…",
   emptyOptionLabel = "—",
 }: {
-  name: string;
+  name?: string;
   options: SearchableSelectOption[];
   defaultValue?: string | null;
+  value?: string | null;
+  onChange?: (id: string) => void;
   placeholder?: string;
   emptyOptionLabel?: string;
 }) {
-  const selectedDefault = options.find((o) => o.id === defaultValue);
-  const [query, setQuery] = useState(selectedDefault?.label ?? "");
-  const [value, setValue] = useState(defaultValue ?? "");
+  const isControlled = controlledValue !== undefined;
+  const initialValue = (isControlled ? controlledValue : defaultValue) ?? "";
+  const initialLabel = options.find((o) => o.id === initialValue)?.label ?? "";
+
+  const [query, setQuery] = useState(initialLabel);
+  const [internalValue, setInternalValue] = useState(initialValue);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  const value = isControlled ? (controlledValue ?? "") : internalValue;
+
+  // Όταν αλλάζει το controlled value απ' έξω (π.χ. ο χρήστης άλλαξε άλλο
+  // φίλτρο και το URL ξαναφορτώθηκε), συγχρόνισε το ορατό κείμενο.
+  useEffect(() => {
+    if (!isControlled) return;
+    const label = options.find((o) => o.id === controlledValue)?.label ?? "";
+    setQuery(label);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controlledValue]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -50,13 +74,10 @@ export function SearchableSelect({
   }, [query, options]);
 
   function select(option: SearchableSelectOption | null) {
-    if (option) {
-      setQuery(option.label);
-      setValue(option.id);
-    } else {
-      setQuery("");
-      setValue("");
-    }
+    const id = option?.id ?? "";
+    setQuery(option?.label ?? "");
+    if (!isControlled) setInternalValue(id);
+    onChange?.(id);
     setOpen(false);
   }
 
@@ -67,7 +88,7 @@ export function SearchableSelect({
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
-          setValue("");
+          if (!isControlled) setInternalValue("");
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
@@ -75,7 +96,7 @@ export function SearchableSelect({
         autoComplete="off"
         className="h-11 w-full rounded-xl border border-black/10 bg-white px-3.5 text-sm text-ink placeholder:text-ink/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
       />
-      <input type="hidden" name={name} value={value} />
+      {name && <input type="hidden" name={name} value={value} />}
 
       {open && (
         <div className="absolute z-30 mt-1 max-h-72 w-full overflow-y-auto rounded-xl border border-black/10 bg-white p-1.5 shadow-lg">

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 
 export function DoctorsSearchBar({
   initialQuery,
@@ -63,24 +64,23 @@ export function DoctorsSearchBar({
         placeholder="Αναζήτηση με επώνυμο ή όνομα…"
         className="h-11 w-full rounded-xl border border-black/10 bg-white px-3.5 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
       />
-      <select
-        value={region}
-        onChange={(e) => {
-          setRegion(e.target.value);
-          pushParams({ region: e.target.value });
-        }}
-        className="h-11 shrink-0 rounded-xl border border-black/10 bg-white px-3 text-sm text-ink"
-      >
-        <option value="">Όλες οι περιοχές</option>
-        {!!noRegionCount && noRegionValue && (
-          <option value={noRegionValue}>Χωρίς περιοχή ({noRegionCount})</option>
-        )}
-        {regions.map((r) => (
-          <option key={r} value={r}>
-            {r}
-          </option>
-        ))}
-      </select>
+      <div className="w-56 shrink-0">
+        <SearchableSelect
+          value={region}
+          onChange={(next) => {
+            setRegion(next);
+            pushParams({ region: next });
+          }}
+          placeholder="Όλες οι περιοχές"
+          emptyOptionLabel="Όλες οι περιοχές"
+          options={[
+            ...(!!noRegionCount && noRegionValue
+              ? [{ id: noRegionValue, label: `Χωρίς περιοχή (${noRegionCount})` }]
+              : []),
+            ...regions.map((r) => ({ id: r, label: r })),
+          ]}
+        />
+      </div>
       {reps && reps.length > 0 && (
         <select
           value={rep}
