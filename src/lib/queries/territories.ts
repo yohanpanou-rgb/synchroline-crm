@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database.types";
+import { formatDoctorName } from "@/lib/utils/name-normalization";
 
 type Client = SupabaseClient<Database>;
 
@@ -7,6 +8,13 @@ export interface TerritoryRepBreakdown {
   repId: string;
   repName: string;
   count: number;
+}
+
+export interface TerritoryAreaDoctor {
+  id: string;
+  name: string;
+  rating: string;
+  repName: string;
 }
 
 export interface TerritoryAreaMetrics {
@@ -20,6 +28,7 @@ export interface TerritoryAreaMetrics {
   primaryRepId: string | null;
   primaryRepName: string;
   isMixed: boolean;
+  doctors: TerritoryAreaDoctor[];
 }
 
 /**
@@ -42,7 +51,7 @@ export async function getTerritoryMapData(
   let query = supabase
     .from("doctors")
     .select(
-      "area_id, current_rep_id, rating_cpo, brick_code, institution, areas!inner(canonical_name, lat, lon), profiles!doctors_current_rep_id_fkey(full_name)",
+      "id, last_name, first_name, area_id, current_rep_id, rating_cpo, brick_code, institution, areas!inner(canonical_name, lat, lon), profiles!doctors_current_rep_id_fkey(full_name)",
     )
     .eq("status", "active")
     .eq("nomos", nomos)
@@ -52,6 +61,9 @@ export async function getTerritoryMapData(
   const { data } = await query;
 
   type Row = {
+    id: string;
+    last_name: string;
+    first_name: string;
     area_id: string;
     current_rep_id: string | null;
     rating_cpo: string;
@@ -70,6 +82,7 @@ export async function getTerritoryMapData(
       universeCount: number;
       cpoCovered: number;
       repCounts: Map<string, { repName: string; count: number }>;
+      doctors: TerritoryAreaDoctor[];
     }
   >();
 
@@ -85,19 +98,26 @@ export async function getTerritoryMapData(
       universeCount: 0,
       cpoCovered: 0,
       repCounts: new Map<string, { repName: string; count: number }>(),
+      doctors: [] as TerritoryAreaDoctor[],
     };
     entry.universeCount++;
     if (raw.rating_cpo !== "0") entry.cpoCovered++;
+    const repName = raw.profiles?.full_name ?? "—";
     if (raw.current_rep_id) {
-      const rc = entry.repCounts.get(raw.current_rep_id) ?? {
-        repName: raw.profiles?.full_name ?? "—",
-        count: 0,
-      };
+      const rc = entry.repCounts.get(raw.current_rep_id) ?? { repName, count: 0 };
       rc.count++;
       entry.repCounts.set(raw.current_rep_id, rc);
     }
+    entry.doctors.push({
+      id: raw.id,
+      name: formatDoctorName(raw.last_name, raw.first_name),
+      rating: raw.rating_cpo,
+      repName,
+    });
     byArea.set(raw.area_id, entry);
   }
+
+  const RATING_RANK: Record<string, number> = { "3": 4, "2": 3, "1": 2, ΥΔ: 1, "0": 0 };
 
   return [...byArea.entries()]
     .map(([areaId, entry]) => {
@@ -115,6 +135,10 @@ export async function getTerritoryMapData(
         primaryRepId: repBreakdown[0]?.repId ?? null,
         primaryRepName: repBreakdown[0]?.repName ?? "Χωρίς rep",
         isMixed: repBreakdown.length > 1,
+        doctors: entry.doctors.sort((a, b) => {
+          const rankDiff = (RATING_RANK[b.rating] ?? 0) - (RATING_RANK[a.rating] ?? 0);
+          return rankDiff !== 0 ? rankDiff : a.name.localeCompare(b.name, "el");
+        }),
       };
     })
     .sort((a, b) => b.universeCount - a.universeCount);
