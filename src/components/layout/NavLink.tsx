@@ -12,6 +12,7 @@ import {
   PharmacyIcon,
   CyclesIcon,
   InstitutionIcon,
+  MapIcon,
 } from "@/components/ui/icons";
 
 // Icon components can't cross the server -> client boundary as props, so the
@@ -24,6 +25,7 @@ const ICONS_BY_HREF: Record<string, typeof DashboardIcon> = {
   "/pharmacies": PharmacyIcon,
   "/hospitals": InstitutionIcon,
   "/cycles": CyclesIcon,
+  "/territories": MapIcon,
 };
 
 function isNavItemActive(pathname: string, href: string) {

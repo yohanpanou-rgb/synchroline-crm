@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { ACADEMIC_TITLES } from "@/lib/constants/academic-titles";
 import { PostalCodeBrickFields } from "@/components/doctors/PostalCodeBrickFields";
+import { AreaCombobox } from "@/components/doctors/AreaCombobox";
 import type { Database } from "@/lib/types/database.types";
 
 type Doctor = Database["public"]["Tables"]["doctors"]["Row"];
@@ -62,7 +63,7 @@ export function DoctorForm({
         </div>
 
         <Field label="Περιοχή">
-          <Input name="region" defaultValue={doctor?.region ?? ""} />
+          <AreaCombobox defaultRegion={doctor?.region} defaultAreaId={doctor?.area_id} />
         </Field>
         <Field label="Νομός / Πόλη">
           <Input name="county" defaultValue={doctor?.county ?? ""} />

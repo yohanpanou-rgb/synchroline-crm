@@ -102,3 +102,13 @@ export function ArrowLeftIcon(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function MapIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M9 4L4 6v14l5-2 6 2 5-2V4l-5 2-6-2z" />
+      <path d="M9 4v14" />
+      <path d="M15 6v14" />
+    </Icon>
+  );
+}

@@ -34,6 +34,51 @@ async function isSharedInstitution(
   return data?.is_shared ?? false;
 }
 
+export interface AreaSearchResult {
+  id: string;
+  canonical_name: string;
+  lat: number | null;
+  lon: number | null;
+  score: number;
+}
+
+/** Αναζήτηση κανονικών περιοχών (fuzzy, alias-aware) για το combobox "Περιοχή". */
+export async function searchAreas(query: string): Promise<AreaSearchResult[]> {
+  await requireProfile();
+  if (!query.trim()) return [];
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("search_areas", { q: query.trim() });
+  return data ?? [];
+}
+
+/** Βρίσκει κοντινές υπάρχουσες περιοχές πριν επιτραπεί δημιουργία νέας (dedup guard). */
+export async function findSimilarAreas(
+  name: string,
+  threshold = 0.35,
+): Promise<{ id: string; canonical_name: string; score: number }[]> {
+  await requireProfile();
+  if (!name.trim()) return [];
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("find_similar_area", { name: name.trim(), threshold });
+  return data ?? [];
+}
+
+/**
+ * Δημιουργεί νέα περιοχή -- ασφαλής μέσω create_area_safe() στη βάση, που
+ * ξανα-ελέγχει για κοντινό match (threshold 0.6) πριν δημιουργήσει, ώστε να
+ * μην προκύψουν διπλότυπα ακόμα κι αν παραλειφθεί το confirm modal.
+ */
+export async function createAreaSafe(
+  name: string,
+): Promise<{ id: string; canonical_name: string; was_existing: boolean } | null> {
+  await requireProfile();
+  if (!name.trim()) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_area_safe", { name: name.trim() });
+  if (error || !data || data.length === 0) return null;
+  return data[0]!;
+}
+
 /** Προτείνει brick βάσει ταχυδρομικού κώδικα (#40), για client-side auto-fill. */
 export async function lookupBrickByPostalCode(
   postalCode: string,
@@ -130,6 +175,7 @@ export async function createDoctor(formData: FormData) {
       first_name: firstName,
       region: str(formData, "region"),
       county: str(formData, "county"),
+      area_id: str(formData, "area_id"),
       brick_code: brickCode,
       dynamic_category: str(formData, "dynamic_category") as DynamicCategory | null,
       priority_color: str(formData, "priority_color") as PriorityColor | null,
@@ -199,6 +245,7 @@ export async function updateDoctor(doctorId: string, formData: FormData) {
       first_name: firstName,
       region: str(formData, "region"),
       county: str(formData, "county"),
+      area_id: str(formData, "area_id"),
       dynamic_category: str(formData, "dynamic_category") as DynamicCategory | null,
       priority_color: str(formData, "priority_color") as PriorityColor | null,
       pharmacy_1: str(formData, "pharmacy_1"),

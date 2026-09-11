@@ -105,6 +105,7 @@ export interface Database {
           academic_title: string | null;
           is_candela_client: boolean;
           postal_code: string | null;
+          area_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -113,6 +114,7 @@ export interface Database {
           region: string | null;
           county: string | null;
           brick_code: string | null;
+          area_id: string | null;
           dynamic_category: DynamicCategory | null;
           budget_2025: number | null;
           budget_2026: number | null;
@@ -178,6 +180,7 @@ export interface Database {
           academic_title: string | null;
           is_candela_client: boolean;
           postal_code: string | null;
+          area_id: string | null;
         }>;
         Relationships: [
           {
@@ -194,7 +197,44 @@ export interface Database {
             referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "doctors_area_id_fkey";
+            columns: ["area_id"];
+            isOneToOne: false;
+            referencedRelation: "areas";
+            referencedColumns: ["id"];
+          },
         ];
+      };
+      areas: {
+        Row: {
+          id: string;
+          canonical_name: string;
+          aliases: string[];
+          search_key: string;
+          lat: number | null;
+          lon: number | null;
+          region: string | null;
+          created_at: string;
+          created_by: string | null;
+        };
+        Insert: Partial<{
+          aliases: string[];
+          lat: number | null;
+          lon: number | null;
+          region: string | null;
+          created_by: string | null;
+        }> & {
+          canonical_name: string;
+        };
+        Update: Partial<{
+          canonical_name: string;
+          aliases: string[];
+          lat: number | null;
+          lon: number | null;
+          region: string | null;
+        }>;
+        Relationships: [];
       };
       territory_assignments: {
         Row: {
@@ -754,6 +794,18 @@ export interface Database {
       current_user_role: {
         Args: Record<string, never>;
         Returns: UserRole;
+      };
+      search_areas: {
+        Args: { q: string };
+        Returns: { id: string; canonical_name: string; lat: number | null; lon: number | null; score: number }[];
+      };
+      find_similar_area: {
+        Args: { name: string; threshold?: number };
+        Returns: { id: string; canonical_name: string; score: number }[];
+      };
+      create_area_safe: {
+        Args: { name: string; p_lat?: number | null; p_lon?: number | null };
+        Returns: { id: string; canonical_name: string; was_existing: boolean }[];
       };
     };
     Enums: Record<string, never>;
