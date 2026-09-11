@@ -8,13 +8,17 @@ import {
   createAreaSafe,
   type AreaSearchResult,
 } from "@/app/(app)/doctors/actions";
+import { toGreekUpper } from "@/lib/utils/greeklish";
 
 /**
  * Combobox "Περιοχή" -- fuzzy/alias-aware αναζήτηση στον κανονικό κατάλογο
- * περιοχών (migration 0035), με dedup-guarded δημιουργία νέας περιοχής όταν
- * δεν βρεθεί ικανοποιητικό match. Υποβάλλει δύο πεδία: το ορατό "region"
- * (κανονικό, σωστά ορθογραφημένο όνομα -- ίδιο πεδίο με πριν, backward
- * compatible με dashboard/reports) και το κρυφό "area_id" (νέο, additive).
+ * περιοχών (migration 0035/0036), με dedup-guarded δημιουργία νέας περιοχής
+ * όταν δεν βρεθεί ικανοποιητικό match. Ό,τι γράψει ο χρήστης -- πεζά,
+ * κεφαλαία, ή greeklish (π.χ. "Kolonaki") -- μετατρέπεται αυτόματα σε
+ * ΕΛΛΗΝΙΚΑ ΚΕΦΑΛΑΙΑ πριν αναζητηθεί/αποθηκευτεί, ίδια σύμβαση με το
+ * υπόλοιπο CRM. Υποβάλλει δύο πεδία: το ορατό "region" (κανονικό όνομα --
+ * ίδιο πεδίο με πριν, backward compatible με dashboard/reports) και το
+ * κρυφό "area_id" (νέο, additive).
  */
 export function AreaCombobox({
   defaultRegion,
@@ -34,13 +38,36 @@ export function AreaCombobox({
   const [pendingName, setPendingName] = useState("");
   const ref = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Refs ώστε ο document-level mousedown listener (registered μία φορά) να
+  // βλέπει πάντα τις τελευταίες τιμές, χωρίς να ξανα-εγγράφεται σε κάθε change.
+  const queryRef = useRef(query);
+  const areaIdRef = useRef(areaId);
+  queryRef.current = query;
+  areaIdRef.current = areaId;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (!ref.current || ref.current.contains(e.target as Node)) return;
+      setOpen(false);
+      // Το πεδίο έχει κείμενο αλλά δεν έχει συνδεθεί ρητά με περιοχή (π.χ. ο
+      // χρήστης δεν πάτησε ποτέ πρόταση) -- πριν κλείσει, δοκίμασε αυτόματη
+      // σύνδεση αν το κείμενο ταιριάζει ήδη ακριβώς με υπάρχουσα περιοχή, και
+      // πάντα κανονικοποίησε σε ΚΕΦΑΛΑΙΑ.
+      const trimmed = queryRef.current.trim();
+      if (!trimmed || areaIdRef.current) return;
+      void (async () => {
+        const normalized = toGreekUpper(trimmed);
+        setQuery(normalized);
+        const data = await searchAreas(normalized);
+        const top = data[0];
+        if (top && top.score >= 0.98) {
+          selectArea(top);
+        }
+      })();
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleQueryChange(value: string) {
@@ -89,9 +116,8 @@ export function AreaCombobox({
     if (created) selectArea({ id: created.id, canonical_name: created.canonical_name });
   }
 
-  const exactMatch = results.some(
-    (r) => r.canonical_name.toLowerCase() === query.trim().toLowerCase(),
-  );
+  const normalizedQuery = toGreekUpper(query);
+  const exactMatch = results.some((r) => r.canonical_name === normalizedQuery);
 
   return (
     <div ref={ref} className="relative">
@@ -100,7 +126,7 @@ export function AreaCombobox({
         value={query}
         onChange={(e) => handleQueryChange(e.target.value)}
         onFocus={() => setOpen(true)}
-        placeholder="π.χ. Κολωνάκι"
+        placeholder="π.χ. Κολωνάκι ή Kolonaki"
         autoComplete="off"
       />
       <input type="hidden" name="area_id" value={areaId} />
@@ -131,7 +157,7 @@ export function AreaCombobox({
               onClick={handleCreateClick}
               className="mt-1 flex w-full items-center gap-1.5 rounded-lg border-t border-black/5 px-2 py-2 text-left text-sm text-primary hover:bg-primary/5"
             >
-              + Δημιουργία νέας περιοχής: «{query.trim()}»
+              + Δημιουργία νέας περιοχής: «{normalizedQuery}»
             </button>
           )}
         </div>
@@ -172,7 +198,7 @@ export function AreaCombobox({
                 onClick={() => doCreate(pendingName)}
                 className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary-dark"
               >
-                Δημιούργησε «{pendingName}» ούτως ή άλλως
+                Δημιούργησε «{toGreekUpper(pendingName)}» ούτως ή άλλως
               </button>
             </div>
           </div>

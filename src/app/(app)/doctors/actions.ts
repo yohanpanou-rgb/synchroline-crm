@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { normalizeDoctorName } from "@/lib/utils/name-normalization";
+import { toGreekUpper } from "@/lib/utils/greeklish";
 import type {
   DoctorStatus,
   DynamicCategory,
@@ -42,12 +43,17 @@ export interface AreaSearchResult {
   score: number;
 }
 
-/** Αναζήτηση κανονικών περιοχών (fuzzy, alias-aware) για το combobox "Περιοχή". */
+/**
+ * Αναζήτηση κανονικών περιοχών (fuzzy, alias-aware) για το combobox
+ * "Περιοχή". Greeklish ή πεζά μετατρέπονται πρώτα σε ΕΛΛΗΝΙΚΑ ΚΕΦΑΛΑΙΑ --
+ * ίδια σύμβαση με το υπόλοιπο CRM -- πριν σταλούν στο fuzzy search.
+ */
 export async function searchAreas(query: string): Promise<AreaSearchResult[]> {
   await requireProfile();
-  if (!query.trim()) return [];
+  const normalized = toGreekUpper(query);
+  if (!normalized) return [];
   const supabase = await createClient();
-  const { data } = await supabase.rpc("search_areas", { q: query.trim() });
+  const { data } = await supabase.rpc("search_areas", { q: normalized });
   return data ?? [];
 }
 
@@ -57,24 +63,28 @@ export async function findSimilarAreas(
   threshold = 0.35,
 ): Promise<{ id: string; canonical_name: string; score: number }[]> {
   await requireProfile();
-  if (!name.trim()) return [];
+  const normalized = toGreekUpper(name);
+  if (!normalized) return [];
   const supabase = await createClient();
-  const { data } = await supabase.rpc("find_similar_area", { name: name.trim(), threshold });
+  const { data } = await supabase.rpc("find_similar_area", { name: normalized, threshold });
   return data ?? [];
 }
 
 /**
  * Δημιουργεί νέα περιοχή -- ασφαλής μέσω create_area_safe() στη βάση, που
  * ξανα-ελέγχει για κοντινό match (threshold 0.6) πριν δημιουργήσει, ώστε να
- * μην προκύψουν διπλότυπα ακόμα κι αν παραλειφθεί το confirm modal.
+ * μην προκύψουν διπλότυπα ακόμα κι αν παραλειφθεί το confirm modal. Η ίδια
+ * η βάση κανονικοποιεί σε ΚΕΦΑΛΑΙΑ χωρίς τόνους (migration 0036), εδώ
+ * μετατρέπουμε greeklish σε ελληνικά πριν στείλουμε το αίτημα.
  */
 export async function createAreaSafe(
   name: string,
 ): Promise<{ id: string; canonical_name: string; was_existing: boolean } | null> {
   await requireProfile();
-  if (!name.trim()) return null;
+  const normalized = toGreekUpper(name);
+  if (!normalized) return null;
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("create_area_safe", { name: name.trim() });
+  const { data, error } = await supabase.rpc("create_area_safe", { name: normalized });
   if (error || !data || data.length === 0) return null;
   return data[0]!;
 }
