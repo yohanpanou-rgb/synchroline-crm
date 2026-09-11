@@ -13,6 +13,11 @@ const ATTICA_CENTER: [number, number] = [37.98, 23.73];
  * "Δες όλη τη χώρα"). */
 function FitBounds({ points }: { points: [number, number][] }) {
   const map = useMap();
+  // Σταθερό κλειδί από το ίδιο το περιεχόμενο (όχι μόνο length) -- π.χ.
+  // εναλλαγή rep filter μπορεί συμπτωματικά να δώσει ίδιο πλήθος σημείων σε
+  // εντελώς διαφορετικές τοποθεσίες, οπότε το length-only dependency δεν
+  // ξανατρέχει το fitBounds και ο χάρτης μένει "κολλημένος" στην παλιά θέα.
+  const boundsKey = points.map((p) => p.join(",")).join("|");
   useEffect(() => {
     if (points.length === 0) return;
     if (points.length === 1) {
@@ -21,7 +26,7 @@ function FitBounds({ points }: { points: [number, number][] }) {
     }
     map.fitBounds(points, { padding: [32, 32] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [points.length]);
+  }, [boundsKey]);
   return null;
 }
 
