@@ -58,6 +58,13 @@ export function HospitalAccordion({
     });
   }
 
+  function clearReps(institutionId: string) {
+    startTransition(async () => {
+      await setInstitutionReps(institutionId, []);
+      router.refresh();
+    });
+  }
+
   return (
     <div className="space-y-3">
       {deleteError && (
@@ -111,6 +118,19 @@ export function HospitalAccordion({
                   </p>
                   {manager ? (
                     <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => clearReps(group.id)}
+                        className={cn(
+                          "rounded-full px-2.5 py-1 text-xs font-medium disabled:opacity-50",
+                          group.repIds.length === 0
+                            ? "bg-primary text-white"
+                            : "bg-white text-ink/60 hover:bg-ink/10",
+                        )}
+                      >
+                        Χωρίς rep
+                      </button>
                       {reps.map((rep) => {
                         const active = group.repIds.includes(rep.id);
                         return (
