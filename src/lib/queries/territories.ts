@@ -46,7 +46,7 @@ export interface TerritoryAreaMetrics {
  */
 export async function getTerritoryMapData(
   supabase: Client,
-  { repId, nomos = "ΑΤΤΙΚΗΣ" }: { repId?: string; nomos?: string } = {},
+  { repId, nomos }: { repId?: string; nomos?: string } = {},
 ): Promise<TerritoryAreaMetrics[]> {
   let query = supabase
     .from("doctors")
@@ -54,8 +54,8 @@ export async function getTerritoryMapData(
       "id, last_name, first_name, area_id, current_rep_id, rating_cpo, brick_code, institution, areas!inner(canonical_name, lat, lon), profiles!doctors_current_rep_id_fkey(full_name)",
     )
     .eq("status", "active")
-    .eq("nomos", nomos)
     .not("area_id", "is", null);
+  if (nomos) query = query.eq("nomos", nomos);
   if (repId) query = query.eq("current_rep_id", repId);
 
   const { data } = await query;

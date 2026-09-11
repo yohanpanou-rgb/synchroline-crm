@@ -45,7 +45,7 @@ export default async function TerritoriesPage({
             href={showAll ? "/territories" : "/territories?all=1"}
             className="rounded-xl border border-black/10 px-3.5 py-2 text-sm font-medium text-ink/70 hover:bg-ink/5"
           >
-            {showAll ? "Δες μόνο τις δικές μου" : "Δες όλη την Αττική"}
+            {showAll ? "Δες μόνο τις δικές μου" : "Δες όλη τη χώρα"}
           </Link>
         )}
       </div>

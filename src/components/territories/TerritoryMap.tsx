@@ -1,12 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from "react-leaflet";
 import type { TerritoryAreaMetrics } from "@/lib/queries/territories";
 
 const ATTICA_CENTER: [number, number] = [37.98, 23.73];
+
+/** Προσαρμόζει αυτόματα zoom/center ώστε να χωράνε όλα τα plotted σημεία
+ * (π.χ. Αττική + Θεσσαλονίκη/Βόρεια Ελλάδα μαζί όταν ο manager επιλέξει
+ * "Δες όλη τη χώρα"). */
+function FitBounds({ points }: { points: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (points.length === 0) return;
+    if (points.length === 1) {
+      map.setView(points[0]!, 13);
+      return;
+    }
+    map.fitBounds(points, { padding: [32, 32] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [points.length]);
+  return null;
+}
 
 const RATING_TONE: Record<string, string> = {
   "3": "bg-success/15 text-success",
@@ -43,6 +60,7 @@ export function TerritoryMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <FitBounds points={plotted.map((a) => [a.lat!, a.lon!] as [number, number])} />
         {plotted.map((a) => {
           const color = a.primaryRepId ? colorMap[a.primaryRepId] ?? "#94a3b8" : "#94a3b8";
           const pct = a.universeCount > 0 ? Math.round((100 * a.cpoCovered) / a.universeCount) : 0;
