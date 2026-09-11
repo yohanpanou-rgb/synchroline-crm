@@ -33,6 +33,10 @@ export function DoctorsSearchBar({
       else params.delete(key);
     }
     router.push(`/doctors?${params.toString()}`);
+    // Οι δύο selects είναι uncontrolled (defaultValue) -- χωρίς refresh() το
+    // Next.js router cache μπορεί να δείξει προσωρινά μπαγιάτικα counts/λίστα
+    // μέχρι το επόμενο πλήρες reload.
+    router.refresh();
   }
 
   useEffect(() => {
