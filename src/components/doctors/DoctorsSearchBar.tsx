@@ -9,12 +9,17 @@ export function DoctorsSearchBar({
   initialRegion,
   reps,
   initialRep,
+  noRegionCount,
+  noRegionValue,
 }: {
   initialQuery: string;
   regions: string[];
   initialRegion: string;
   reps?: { id: string; full_name: string }[];
   initialRep?: string;
+  /** Manager only -- πλήθος γιατρών χωρίς περιοχή· undefined = μην εμφανιστεί η επιλογή. */
+  noRegionCount?: number;
+  noRegionValue?: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -55,6 +60,9 @@ export function DoctorsSearchBar({
         className="h-11 shrink-0 rounded-xl border border-black/10 bg-white px-3 text-sm text-ink"
       >
         <option value="">Όλες οι περιοχές</option>
+        {!!noRegionCount && noRegionValue && (
+          <option value={noRegionValue}>Χωρίς περιοχή ({noRegionCount})</option>
+        )}
         {regions.map((r) => (
           <option key={r} value={r}>
             {r}

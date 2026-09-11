@@ -9,6 +9,9 @@ import { getAssignableReps } from "@/lib/queries/reps";
 import type { RatingCpo } from "@/lib/types/database.types";
 import { cn } from "@/lib/utils/cn";
 
+/** Sentinel τιμή για το φίλτρο "Χωρίς περιοχή" (region IS NULL) -- manager only. */
+const NO_REGION_VALUE = "__no_region__";
+
 const RATING_FILTER_TONE: Record<RatingCpo, string> = {
   "1": "bg-success text-white",
   "2": "bg-primary text-white",
@@ -68,7 +71,10 @@ export default async function DoctorsPage({
   if (rating) {
     query = query.eq("rating_cpo", rating as RatingCpo);
   }
-  if (region) {
+  if (region === NO_REGION_VALUE) {
+    query = query.is("region", null);
+    countQuery = countQuery.is("region", null);
+  } else if (region) {
     query = query.eq("region", region);
     countQuery = countQuery.eq("region", region);
   }
@@ -104,6 +110,7 @@ export default async function DoctorsPage({
   const regions = [
     ...new Set((regionRows ?? []).map((r) => r.region).filter((r): r is string => !!r)),
   ].sort((a, b) => a.localeCompare(b, "el"));
+  const noRegionCount = (regionRows ?? []).filter((r) => !r.region).length;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -142,6 +149,8 @@ export default async function DoctorsPage({
         initialRegion={region ?? ""}
         reps={manager ? reps : undefined}
         initialRep={rep ?? ""}
+        noRegionCount={manager ? noRegionCount : undefined}
+        noRegionValue={NO_REGION_VALUE}
       />
 
       <div className="mb-5 flex flex-wrap gap-2">
