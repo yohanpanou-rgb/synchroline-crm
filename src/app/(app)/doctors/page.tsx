@@ -171,7 +171,7 @@ export default async function DoctorsPage({
         initialRegion={region ?? ""}
         reps={manager ? reps : undefined}
         initialRep={rep ?? ""}
-        noRegionCount={manager ? (noRegionCount ?? 0) : undefined}
+        noRegionCount={noRegionCount ?? 0}
         noRegionValue={NO_REGION_VALUE}
       />
 

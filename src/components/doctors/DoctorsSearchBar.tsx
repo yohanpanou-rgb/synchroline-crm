@@ -17,7 +17,7 @@ export function DoctorsSearchBar({
   initialRegion: string;
   reps?: { id: string; full_name: string }[];
   initialRep?: string;
-  /** Manager only -- πλήθος γιατρών χωρίς περιοχή· undefined = μην εμφανιστεί η επιλογή. */
+  /** Πλήθος γιατρών χωρίς περιοχή (RLS ήδη περιορίζει reps στους δικούς τους). */
   noRegionCount?: number;
   noRegionValue?: string;
 }) {
