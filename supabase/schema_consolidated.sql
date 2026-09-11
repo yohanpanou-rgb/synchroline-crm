@@ -1776,3 +1776,6 @@ where d.region = 'ΘΕΡΜΗ' and d.nomos = 'ΘΕΣΣΑΛΟΝΙΚΗΣ' and d.are
 update doctors d
 set area_id = (select id from areas where canonical_name = 'ΘΕΡΜΗ ΑΧΑΪΑΣ')
 where d.region = 'ΘΕΡΜΗ' and d.nomos = 'ΑΧΑΪΑΣ' and d.area_id is null;
+-- Το πεδίο "Νομός / Πόλη" (doctors.county) πρέπει να δείχνει νομό, όχι πόλη
+-- -- "ΑΘΗΝΑ" δεν είναι νομός, "ΑΤΤΙΚΗ" είναι. Καθαρή 1-προς-1 αντικατάσταση.
+update doctors set county = 'ΑΤΤΙΚΗ' where county = 'ΑΘΗΝΑ';
