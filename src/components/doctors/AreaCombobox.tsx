@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/Input";
 import {
   searchAreas,
+  searchHospitals,
   findSimilarAreas,
   createAreaSafe,
   type AreaSearchResult,
+  type HospitalSearchResult,
 } from "@/app/(app)/doctors/actions";
 import { toGreekUpper } from "@/lib/utils/greeklish";
 
@@ -30,6 +32,7 @@ export function AreaCombobox({
   const [query, setQuery] = useState(defaultRegion ?? "");
   const [areaId, setAreaId] = useState(defaultAreaId ?? "");
   const [results, setResults] = useState<AreaSearchResult[]>([]);
+  const [hospitalResults, setHospitalResults] = useState<HospitalSearchResult[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [similarOptions, setSimilarOptions] = useState<
@@ -77,12 +80,17 @@ export function AreaCombobox({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!value.trim()) {
       setResults([]);
+      setHospitalResults([]);
       return;
     }
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
-      const data = await searchAreas(value);
-      setResults(data);
+      const [areaData, hospitalData] = await Promise.all([
+        searchAreas(value),
+        searchHospitals(value),
+      ]);
+      setResults(areaData);
+      setHospitalResults(hospitalData);
       setLoading(false);
     }, 250);
   }
@@ -91,6 +99,17 @@ export function AreaCombobox({
     setQuery(result.canonical_name);
     setAreaId(result.id);
     setResults([]);
+    setHospitalResults([]);
+    setOpen(false);
+  }
+
+  /** Νοσοκομεία δεν έχουν συντεταγμένες στον κατάλογο περιοχών -- γεμίζει
+   * μόνο το ελεύθερο κείμενο region, χωρίς area_id. */
+  function selectHospital(name: string) {
+    setQuery(name);
+    setAreaId("");
+    setResults([]);
+    setHospitalResults([]);
     setOpen(false);
   }
 
@@ -134,7 +153,7 @@ export function AreaCombobox({
       {open && query.trim() && (
         <div className="absolute z-30 mt-1 max-h-72 w-full overflow-y-auto rounded-xl border border-black/10 bg-white p-1.5 shadow-lg">
           {loading && <p className="px-2 py-2 text-xs text-ink/40">Αναζήτηση…</p>}
-          {!loading && results.length === 0 && (
+          {!loading && results.length === 0 && hospitalResults.length === 0 && (
             <p className="px-2 py-2 text-xs text-ink/40">Καμία περιοχή δεν βρέθηκε.</p>
           )}
           {!loading &&
@@ -149,6 +168,18 @@ export function AreaCombobox({
                 {r.score < 1 && (
                   <span className="text-xs text-ink/40">{Math.round(r.score * 100)}%</span>
                 )}
+              </button>
+            ))}
+          {!loading &&
+            hospitalResults.map((h) => (
+              <button
+                key={`hospital-${h.name}`}
+                type="button"
+                onClick={() => selectHospital(h.name)}
+                className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-ink/5"
+              >
+                <span className="shrink-0 text-xs text-ink/40">🏥 Νοσοκομείο</span>
+                <span className="truncate text-ink">{h.name}</span>
               </button>
             ))}
           {!loading && !exactMatch && (

@@ -57,6 +57,32 @@ export async function searchAreas(query: string): Promise<AreaSearchResult[]> {
   return data ?? [];
 }
 
+export interface HospitalSearchResult {
+  name: string;
+}
+
+/**
+ * Αναζήτηση νοσοκομείων (από τον κατάλογο /hospitals) για το ίδιο combobox
+ * "Περιοχή" -- κάποιοι γιατροί έχουν ως "περιοχή" ένα νοσοκομείο (π.χ.
+ * "ΣΥΓΓΡΟΣ") αντί για γεωγραφική περιοχή. Εμφανίζονται ξεχωριστά, με ετικέτα
+ * "Νοσοκομείο ...", και η επιλογή τους γεμίζει μόνο το ελεύθερο κείμενο
+ * region -- δεν συνδέονται με area_id (τα νοσοκομεία δεν έχουν συντεταγμένες
+ * στον κατάλογο περιοχών).
+ */
+export async function searchHospitals(query: string): Promise<HospitalSearchResult[]> {
+  await requireProfile();
+  const normalized = toGreekUpper(query);
+  if (!normalized) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("institutions")
+    .select("name")
+    .ilike("name", `%${normalized}%`)
+    .order("name")
+    .limit(8);
+  return data ?? [];
+}
+
 /** Βρίσκει κοντινές υπάρχουσες περιοχές πριν επιτραπεί δημιουργία νέας (dedup guard). */
 export async function findSimilarAreas(
   name: string,
