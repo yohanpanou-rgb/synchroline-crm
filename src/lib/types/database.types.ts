@@ -105,6 +105,7 @@ export interface Database {
           academic_title: string | null;
           is_candela_client: boolean;
           postal_code: string | null;
+          nomos: string | null;
           area_id: string | null;
           created_at: string;
           updated_at: string;
@@ -142,6 +143,7 @@ export interface Database {
           academic_title: string | null;
           is_candela_client: boolean;
           postal_code: string | null;
+          nomos: string | null;
         }> & {
           last_name: string;
           first_name: string;
@@ -180,6 +182,7 @@ export interface Database {
           academic_title: string | null;
           is_candela_client: boolean;
           postal_code: string | null;
+          nomos: string | null;
           area_id: string | null;
         }>;
         Relationships: [
