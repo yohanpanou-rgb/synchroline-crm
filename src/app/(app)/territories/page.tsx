@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, isManagerOrAdmin } from "@/lib/supabase/profile";
 import { getTerritoryMapData } from "@/lib/queries/territories";
@@ -6,20 +5,31 @@ import { getAssignableReps } from "@/lib/queries/reps";
 import { buildRepColorMap } from "@/lib/constants/rep-colors";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { TerritoryMapLoader } from "@/components/territories/TerritoryMapLoader";
+import { TerritoryRepFilter } from "@/components/territories/TerritoryRepFilter";
 
 export default async function TerritoriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ all?: string }>;
+  searchParams: Promise<{ rep?: string }>;
 }) {
   const profile = await requireProfile();
   const manager = isManagerOrAdmin(profile.role);
-  const { all } = await searchParams;
-  const showAll = manager && all === "1";
+  const { rep } = await searchParams;
+
+  // Μη-manager: πάντα οι δικές του περιοχές (RLS το επιβάλλει έτσι κι αλλιώς).
+  // Manager: "" -> δικές του, "all" -> όλοι οι reps, αλλιώς συγκεκριμένος rep.
+  const selectedRepParam = manager ? (rep ?? "") : "";
+  const repIdFilter = !manager
+    ? profile.id
+    : selectedRepParam === "all"
+      ? undefined
+      : selectedRepParam === ""
+        ? profile.id
+        : selectedRepParam;
 
   const supabase = await createClient();
   const [areas, reps] = await Promise.all([
-    getTerritoryMapData(supabase, { repId: showAll ? undefined : profile.id }),
+    getTerritoryMapData(supabase, { repId: repIdFilter }),
     getAssignableReps(supabase),
   ]);
   const colorMap = buildRepColorMap(reps);
@@ -40,14 +50,7 @@ export default async function TerritoriesPage({
             γιατροί εξαιρούνται πάντα.
           </p>
         </div>
-        {manager && (
-          <Link
-            href={showAll ? "/territories" : "/territories?all=1"}
-            className="rounded-xl border border-black/10 px-3.5 py-2 text-sm font-medium text-ink/70 hover:bg-ink/5"
-          >
-            {showAll ? "Δες μόνο τις δικές μου" : "Δες όλη τη χώρα"}
-          </Link>
-        )}
+        {manager && <TerritoryRepFilter reps={reps} selectedRepId={selectedRepParam} />}
       </div>
 
       {areas.length === 0 ? (
