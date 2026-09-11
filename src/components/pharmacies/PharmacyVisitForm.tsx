@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { formatDoctorName } from "@/lib/utils/name-normalization";
 
 interface DoctorOption {
@@ -85,17 +86,15 @@ export function PharmacyVisitForm({
         )}
 
         <Field label="Κοντινός γιατρός (προαιρετικό)">
-          <Select
+          <SearchableSelect
             name="nearby_doctor_id"
-            defaultValue={defaultValues?.nearby_doctor_id ?? ""}
-          >
-            <option value="">—</option>
-            {doctors.map((doctor) => (
-              <option key={doctor.id} value={doctor.id}>
-                {formatDoctorName(doctor.last_name, doctor.first_name)}
-              </option>
-            ))}
-          </Select>
+            defaultValue={defaultValues?.nearby_doctor_id}
+            placeholder="Αναζήτηση γιατρού…"
+            options={doctors.map((doctor) => ({
+              id: doctor.id,
+              label: formatDoctorName(doctor.last_name, doctor.first_name),
+            }))}
+          />
         </Field>
       </div>
 
