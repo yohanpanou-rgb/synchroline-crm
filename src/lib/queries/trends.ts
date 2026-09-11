@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database.types";
 import { startOfWeek, addDays, toISODate } from "@/lib/constants/schedule";
+import { formatDoctorName } from "@/lib/utils/name-normalization";
 
 type Client = SupabaseClient<Database>;
 type Cycle = Database["public"]["Tables"]["cycles"]["Row"];
@@ -70,10 +71,16 @@ export async function getVisitTrend(
   return buckets;
 }
 
+export interface RegionBreakdownDoctor {
+  id: string;
+  name: string;
+}
+
 export interface RegionBreakdown {
   region: string;
   doctorCount: number;
   visitsThisCycle: number;
+  doctors: RegionBreakdownDoctor[];
 }
 
 /** Doctor + completed-visit counts grouped by region, sorted by doctor count desc. */
@@ -84,17 +91,21 @@ export async function getRegionBreakdown(
 ): Promise<RegionBreakdown[]> {
   let doctorsQuery = supabase
     .from("doctors")
-    .select("id, region")
+    .select("id, region, last_name, first_name")
     .eq("status", "active");
   if (repId) doctorsQuery = doctorsQuery.eq("current_rep_id", repId);
   const { data: doctors } = await doctorsQuery;
 
   const regionByDoctorId = new Map<string, string>();
   const doctorCountByRegion = new Map<string, number>();
+  const doctorsByRegion = new Map<string, RegionBreakdownDoctor[]>();
   for (const d of doctors ?? []) {
     const region = d.region?.trim() || "Χωρίς περιοχή";
     regionByDoctorId.set(d.id, region);
     doctorCountByRegion.set(region, (doctorCountByRegion.get(region) ?? 0) + 1);
+    const arr = doctorsByRegion.get(region) ?? [];
+    arr.push({ id: d.id, name: formatDoctorName(d.last_name, d.first_name) });
+    doctorsByRegion.set(region, arr);
   }
 
   const visitCountByRegion = new Map<string, number>();
@@ -119,6 +130,7 @@ export async function getRegionBreakdown(
       region,
       doctorCount,
       visitsThisCycle: visitCountByRegion.get(region) ?? 0,
+      doctors: (doctorsByRegion.get(region) ?? []).sort((a, b) => a.name.localeCompare(b.name, "el")),
     }))
     .sort((a, b) => b.doctorCount - a.doctorCount);
 }

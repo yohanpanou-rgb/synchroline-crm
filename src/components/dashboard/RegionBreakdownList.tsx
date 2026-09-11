@@ -1,4 +1,5 @@
 import type { RegionBreakdown } from "@/lib/queries/trends";
+import { ClickableNumber } from "@/components/ui/ClickableNumber";
 
 export function RegionBreakdownList({ regions }: { regions: RegionBreakdown[] }) {
   if (regions.length === 0) {
@@ -13,9 +14,19 @@ export function RegionBreakdownList({ regions }: { regions: RegionBreakdown[] })
         <div key={r.region}>
           <div className="mb-1 flex justify-between text-xs">
             <span className="font-medium text-ink">{r.region}</span>
-            <span className="tabular-nums text-ink/50">
-              {r.doctorCount} γιατροί · {r.visitsThisCycle} επισκέψεις
-            </span>
+            <ClickableNumber
+              align="right"
+              emptyLabel="Κανένας γιατρός."
+              items={r.doctors.map((d) => ({
+                id: d.id,
+                label: d.name,
+                href: `/doctors/${d.id}`,
+              }))}
+            >
+              <span className="tabular-nums text-ink/50">
+                {r.doctorCount} γιατροί · {r.visitsThisCycle} επισκέψεις
+              </span>
+            </ClickableNumber>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-ink/10">
             <div
