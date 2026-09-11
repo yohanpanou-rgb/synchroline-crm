@@ -80,10 +80,16 @@ export default async function DoctorsPage({
     countQuery = countQuery.eq("current_rep_id", rep);
   }
 
+  // Οι επιλογές του φίλτρου "Περιοχή" περιορίζονται στον επιλεγμένο rep (αν
+  // υπάρχει), ώστε το dropdown να δείχνει μόνο περιοχές όπου έχει πράγματι
+  // γιατρούς -- όχι όλο τον κατάλογο περιοχών όλης της εταιρείας.
+  let regionOptionsQuery = supabase.from("doctors").select("region");
+  if (manager && rep) regionOptionsQuery = regionOptionsQuery.eq("current_rep_id", rep);
+
   const [{ data: doctors }, { data: ratingRows }, { data: regionRows }, reps] = await Promise.all([
     query,
     countQuery,
-    supabase.from("doctors").select("region"),
+    regionOptionsQuery,
     manager ? getAssignableReps(supabase) : Promise.resolve([]),
   ]);
 
